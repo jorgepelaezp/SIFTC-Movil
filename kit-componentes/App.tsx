@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SafeAreaView, View, StyleSheet } from "react-native";
+import { Alert, SafeAreaView, View, StyleSheet } from "react-native";
 import {
   Button,
   TextField,
@@ -8,12 +8,29 @@ import {
   ErrorType,
 } from "./components";
 import { colors, spacing } from "./theme";
+import { login, BASE_URL } from "./services/api";
 
 export default function App() {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [error, setError] = useState<ErrorType | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    setError(null);
+    setLoading(true);
+    const result = await login(user.trim(), pass);
+    setLoading(false);
+
+    if (!result.ok) {
+      Alert.alert("Debug", String(BASE_URL) + " | " + JSON.stringify(result));
+      setError(result.error);
+      return;
+    }
+
+    // Aquí Alejandro enchufará el guardado seguro del token (CA2)
+    console.log("Login OK, token:", result.token);
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -34,23 +51,10 @@ export default function App() {
         />
         <Button
           title="Ingresar"
-          onPress={() => setLoading(!loading)}
+          onPress={handleLogin}
           loading={loading}
+          disabled={!user || !pass}
         />
-
-        <View style={styles.demo}>
-          <Button
-            title="Probar error de credenciales"
-            onPress={() => setError("credenciales")}
-          />
-          <View style={{ height: spacing.sm }} />
-          <Button
-            title="Probar error sin conexión"
-            onPress={() => setError("sinConexion")}
-          />
-          <View style={{ height: spacing.sm }} />
-          <Button title="Quitar error" onPress={() => setError(null)} />
-        </View>
 
         {loading && <LoadingIndicator />}
       </View>
@@ -61,5 +65,4 @@ export default function App() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, marginTop: spacing.lg },
-  demo: { marginTop: spacing.lg },
 });
