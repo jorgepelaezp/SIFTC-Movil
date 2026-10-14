@@ -1,5 +1,5 @@
-export { Button } from "./Button";
-export { TextField } from "./TextField";
-export { LoadingIndicator } from "./LoadingIndicator";
-export { ErrorMessage } from "./ErrorMessage";
-export type { ErrorType } from "./ErrorMessage";
+export { Button } from "./Boton";
+export { TextField } from "./CampoTexto";
+export { LoadingIndicator } from "./IndicadorCarga";
+export { ErrorMessage } from "./MensajeError";
+export type { ErrorType } from "./MensajeError";

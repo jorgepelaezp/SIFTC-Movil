@@ -1,65 +1,64 @@
 import { useState } from "react";
-import { SafeAreaView, View, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import {
-  Button,
-  TextField,
-  LoadingIndicator,
-  ErrorMessage,
-  ErrorType,
-} from "./components";
-import { colors, spacing } from "./theme";
+  useFonts,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from "@expo-google-fonts/manrope";
+import { colors } from "./theme";
+import { AppHeader } from "./components/EncabezadoApp";
+import { BottomTabBar, TabKey } from "./components/BarraInferior";
+import LoginScreen from "./screens/InciarSesion";
+import HomeScreen from "./screens/TableroScreen";
+import ChartsScreen from "./screens/GraficasScreen";
+import RankingScreen from "./screens/RankingScreen";
 
 export default function App() {
-  const [user, setUser] = useState("");
-  const [pass, setPass] = useState("");
-  const [error, setError] = useState<ErrorType | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [fontsLoaded] = useFonts({
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
 
+  const [token, setToken] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabKey>("tablero");
+
+  if (!fontsLoaded) return null;
+
+  // Sin sesión: pantalla de login
+  if (!token) {
+    return (
+      <SafeAreaProvider>
+        <LoginScreen onLoggedIn={setToken} />
+      </SafeAreaProvider>
+    );
+  }
+
+  // Con sesión: cabecera + pantalla + barra inferior
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.content}>
-        {error && <ErrorMessage type={error} />}
-        <TextField
-          label="Usuario"
-          value={user}
-          onChangeText={setUser}
-          error={error === "credenciales"}
-        />
-        <TextField
-          label="Contraseña"
-          value={pass}
-          onChangeText={setPass}
-          secureTextEntry
-          error={error === "credenciales"}
-        />
-        <Button
-          title="Ingresar"
-          onPress={() => setLoading(!loading)}
-          loading={loading}
-        />
-
-        <View style={styles.demo}>
-          <Button
-            title="Probar error de credenciales"
-            onPress={() => setError("credenciales")}
-          />
-          <View style={{ height: spacing.sm }} />
-          <Button
-            title="Probar error sin conexión"
-            onPress={() => setError("sinConexion")}
-          />
-          <View style={{ height: spacing.sm }} />
-          <Button title="Quitar error" onPress={() => setError(null)} />
+    <SafeAreaProvider>
+      <StatusBar style="dark" />
+      <SafeAreaView style={styles.screen} edges={["top"]}>
+        <AppHeader onAvatarPress={() => setToken(null)} />
+        <View style={styles.body}>
+          {tab === "tablero" && <HomeScreen />}
+          {tab === "graficas" && <ChartsScreen />}
+          {tab === "ranking" && <RankingScreen />}
         </View>
-
-        {loading && <LoadingIndicator />}
-      </View>
-    </SafeAreaView>
+        <BottomTabBar active={tab} onChange={setTab} />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, marginTop: spacing.lg },
-  demo: { marginTop: spacing.lg },
+  body: { flex: 1 },
 });
