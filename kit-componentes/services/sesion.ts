@@ -57,21 +57,24 @@ export function tokenVigente(token: string, ahora = Date.now()): boolean {
   return vence !== null && ahora < vence - MARGEN_MS;
 }
 
+export type SesionRestaurada = { token: string | null; vencida: boolean };
+
 /**
  * Recupera la sesión guardada al abrir la app. Devuelve el token si sigue
- * vigente; si venció o no se puede leer, lo elimina y devuelve null.
+ * vigente; si venció o no se puede leer, lo elimina y devuelve token null
+ * (vencida = true indica que había una sesión y caducó).
  */
-export async function restaurarSesion(): Promise<string | null> {
+export async function restaurarSesion(): Promise<SesionRestaurada> {
   let token: string | null = null;
   try {
     token = await SecureStore.getItemAsync(CLAVE_TOKEN);
   } catch {
-    return null;
+    return { token: null, vencida: false };
   }
   if (token && tokenVigente(token)) {
     tokenActual = token;
-    return token;
+    return { token, vencida: false };
   }
   if (token) await eliminarToken();
-  return null;
+  return { token: null, vencida: token !== null };
 }

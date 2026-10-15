@@ -45,8 +45,9 @@ export default function App() {
 
   // Al abrir la app: recuperar la sesión guardada si el token sigue vigente
   useEffect(() => {
-    restaurarSesion().then((guardado) => {
+    restaurarSesion().then(({ token: guardado, vencida }) => {
       setToken(guardado);
+      setSesionExpirada(vencida);
       setRestaurando(false);
     });
   }, []);
