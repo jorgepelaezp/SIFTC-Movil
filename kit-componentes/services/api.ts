@@ -1,5 +1,47 @@
+import { obtenerTokenActual, tokenVigente } from "./sesion";
+
 export const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 // const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
+// HU-MO-01 CA2: cuando el token vence o el backend responde 401, se avisa a
+// App.tsx para que cierre la sesión y vuelva al login.
+let alExpirarSesion: (() => void) | null = null;
+
+export function configurarSesionExpirada(manejador: (() => void) | null) {
+  alExpirarSesion = manejador;
+}
+
+export class SesionExpiradaError extends Error {
+  constructor() {
+    super("La sesión expiró");
+  }
+}
+
+/**
+ * Petición a un endpoint protegido: envía el token en la cabecera
+ * Authorization. Si no hay token vigente o el backend responde 401, cierra la
+ * sesión y lanza SesionExpiradaError.
+ */
+export async function peticionAutenticada(
+  ruta: string,
+  opciones: RequestInit = {},
+): Promise<Response> {
+  const token = obtenerTokenActual();
+  if (!token || !tokenVigente(token)) {
+    alExpirarSesion?.();
+    throw new SesionExpiradaError();
+  }
+
+  const headers = new Headers(opciones.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+  const res = await fetch(`${BASE_URL}${ruta}`, { ...opciones, headers });
+
+  if (res.status === 401) {
+    alExpirarSesion?.();
+    throw new SesionExpiradaError();
+  }
+  return res;
+}
 
 export type LoginResult =
   | { ok: true; token: string }

@@ -25,12 +25,17 @@ const FEATURES = [
   "Cada valor publicado con su origen y su regla de cálculo.",
 ];
 
-type Props = { onLoggedIn: (token: string) => void };
+type Props = {
+  onLoggedIn: (token: string) => void;
+  sesionExpirada?: boolean;
+};
 
-export default function LoginScreen({ onLoggedIn }: Props) {
+export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
-  const [error, setError] = useState<ErrorType | null>(null);
+  const [error, setError] = useState<ErrorType | null>(
+    sesionExpirada ? "sesionExpirada" : null,
+  );
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
