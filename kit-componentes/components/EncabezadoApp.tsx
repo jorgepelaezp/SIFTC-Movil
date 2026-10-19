@@ -1,11 +1,12 @@
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { colors, spacing } from "../theme";
+import { TickerMercado } from "./TickerMercado";
 
 type Props = { onAvatarPress: () => void };
 
 export function AppHeader({ onAvatarPress }: Props) {
   return (
-    <View>
+    <View style={styles.container}>
       <View style={styles.row}>
         <Image
           source={require("../assets/logo.png")}
@@ -13,22 +14,28 @@ export function AppHeader({ onAvatarPress }: Props) {
           resizeMode="contain"
         />
         <Pressable onPress={onAvatarPress} style={styles.avatar}>
-          <Text style={styles.avatarText}>J</Text>
+          <Text style={styles.avatarText}>R</Text>
         </Pressable>
       </View>
-      {/* Aquí irá el ticker desplazable (HU-MO-02 CA1) */}
-      <View style={styles.ticker} />
+      {/* Ticker horizontal animado continuo (HU-MO-02) */}
+      <View style={styles.tickerContainer}>
+        <TickerMercado />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.background,
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   logo: { width: 110, height: 48 },
   avatar: {
@@ -44,9 +51,7 @@ const styles = StyleSheet.create({
     fontFamily: "Manrope_700Bold",
     fontSize: 16,
   },
-  ticker: {
-    height: 36,
-    backgroundColor: colors.navy,
-    marginTop: spacing.sm,
+  tickerContainer: {
+    width: "100%",
   },
-});
+});
