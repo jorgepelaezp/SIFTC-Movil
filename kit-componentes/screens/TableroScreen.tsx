@@ -1,37 +1,57 @@
-import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { PlaceholderBox } from "../components/CuadroVacio";
+import { View, Text, ScrollView, RefreshControl, StyleSheet } from "react-native";
+import {
+  DataError,
+  DaySummary,
+  EmptyState,
+  IndexCard,
+  LoadingIndicator,
+  TopList,
+} from "../components";
+import { useMercado } from "../hooks/useMercado";
 import { colors, spacing } from "../theme";
+import { fechaIso } from "../utils/formato";
 
 export default function HomeScreen() {
+  const { datos, cargando, refrescando, error, refrescar } = useMercado();
+  const vacio = !!datos && datos.entidades.length === 0;
+
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView
+      contentContainerStyle={styles.content}
+      // HU-MO-02 CA3: deslizar hacia abajo actualiza con indicador de carga
+      refreshControl={
+        <RefreshControl
+          refreshing={refrescando}
+          onRefresh={refrescar}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
+      }>
       <Text style={styles.title}>Tablero de mercado</Text>
-      <Text style={styles.subtitle}>Cierre del día</Text>
+      {datos && (
+        <Text style={styles.subtitle}>Cierre del {fechaIso(datos.indice.fecha)}</Text>
+      )}
 
-      <PlaceholderBox height={220} label="Índice general + gráfica" />
+      {cargando && !datos && <LoadingIndicator message="Cargando mercado..." />}
 
-      <View style={styles.row}>
-        {["Apertura", "Máximo", "Mínimo", "Cierre"].map((l) => (
-          <PlaceholderBox key={l} height={64} label={l} style={styles.flex} />
-        ))}
-      </View>
+      {/* Error: si ya había datos se conservan debajo del aviso */}
+      {error && <DataError message={error} onRetry={refrescar} />}
 
-      <PlaceholderBox height={150} label="Resumen del día" dark />
+      {vacio && <EmptyState />}
 
-      <View style={styles.row}>
-        <PlaceholderBox
-          height={200}
-          label="Top 3 ganadores"
-          style={styles.flex}
-        />
-        <PlaceholderBox
-          height={200}
-          label="Top 3 perdedores"
-          style={styles.flex}
-        />
-      </View>
-
-      <PlaceholderBox height={80} label="Ver ranking" style={styles.banner} />
+      {datos && !vacio && (
+        <>
+          <IndexCard indice={datos.indice} ejemplo={datos.ejemplo} />
+          <DaySummary
+            entidades={datos.entidades}
+            mayorSubida={datos.top.ganadores[0]}
+            mayorBajada={datos.top.perdedores[0]}
+          />
+          <TopList title="Top 5 ganadores del día" entidades={datos.top.ganadores} />
+          <TopList title="Top 5 perdedores del día" entidades={datos.top.perdedores} />
+        </>
+      )}
+      <View style={styles.footer} />
     </ScrollView>
   );
 }
@@ -49,7 +69,5 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     marginTop: -8,
   },
-  row: { flexDirection: "row", gap: spacing.sm },
-  flex: { flex: 1 },
-  banner: { backgroundColor: colors.blueSoft, borderColor: colors.blueSoft },
+  footer: { height: spacing.lg },
 });
