@@ -24,7 +24,7 @@ const escenario = () => process.env.EXPO_PUBLIC_MOCK_ESCENARIO ?? "normal";
 
 /* ------------------------------ API real ------------------------------ */
 
-async function pedir<T>(ruta: string): Promise<T> {
+export async function pedir<T>(ruta: string): Promise<T> {
   const res = await peticionAutenticada(`${PREFIJO}${ruta}`);
   if (!res.ok) {
     let problema: ProblemDetails | undefined;
@@ -52,7 +52,7 @@ const azar = (semilla: number) => {
   return x - Math.floor(x);
 };
 
-async function simularRed(): Promise<void> {
+export async function simularRed(): Promise<void> {
   await esperar(700);
   if (escenario() === "sinConexion") throw new TypeError("Network request failed");
   if (escenario() === "error") {

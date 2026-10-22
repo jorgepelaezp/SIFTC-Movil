@@ -38,3 +38,31 @@ export interface DatosMercado {
   /** true cuando los datos son de ejemplo (mocks) y no de la API real */
   ejemplo: boolean;
 }
+
+/* --------------------- Ficha de entidad (HU-MO-04) --------------------- */
+
+/** Vela diaria del IC de una entidad (entidad Cotizacion de Backend). */
+export interface PuntoSerie {
+  fecha: string; // ISO 8601: 2026-10-07
+  apertura: number;
+  maximo: number;
+  minimo: number;
+  cierre: number;
+  variacionPct?: number;
+}
+
+export type Periodo = "1S" | "1M" | "3M";
+
+export interface PosicionRanking {
+  posicion: number;
+  total: number;
+}
+
+export interface FichaEntidad {
+  entidad: Entidad;
+  /** null mientras Backend no entregue el ranking de la entidad */
+  ranking: PosicionRanking | null;
+  periodo: Periodo;
+  serie: PuntoSerie[];
+  ejemplo: boolean;
+}
