@@ -42,6 +42,12 @@ export default function App() {
   const [restaurando, setRestaurando] = useState(true);
   const [sesionExpirada, setSesionExpirada] = useState(false);
   const [tab, setTab] = useState<TabKey>("tablero");
+  const [entidadSeleccionada, setEntidadSeleccionada] = useState<number | undefined>(undefined);
+
+  const navegarAGraficas = useCallback((entidadId: number) => {
+    setEntidadSeleccionada(entidadId);
+    setTab("graficas");
+  }, []);
 
   // Al abrir la app: recuperar la sesión guardada si el token sigue vigente
   useEffect(() => {
@@ -62,6 +68,7 @@ export default function App() {
     setSesionExpirada(porExpiracion);
     setToken(null);
     setTab("tablero");
+    setEntidadSeleccionada(undefined);
     await eliminarToken();
   }, []);
 
@@ -119,8 +126,8 @@ export default function App() {
         <AppHeader onAvatarPress={() => cerrarSesion(false)} />
         <View style={styles.body}>
           {tab === "tablero" && <HomeScreen />}
-          {tab === "graficas" && <ChartsScreen />}
-          {tab === "ranking" && <RankingScreen />}
+          {tab === "graficas" && <ChartsScreen entidadId={entidadSeleccionada} />}
+          {tab === "ranking" && <RankingScreen onSeleccionarEntidad={navegarAGraficas} />}
         </View>
         <BottomTabBar active={tab} onChange={setTab} />
       </SafeAreaView>
