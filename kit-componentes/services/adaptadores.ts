@@ -1,6 +1,12 @@
 // Conversión de las respuestas (API real o mocks) al modelo propio de Móvil.
 // Si Backend cambia nombres de campo, solo se toca este archivo.
-import type { Entidad, IndiceGeneral, TopMercado } from "../models";
+import type {
+  Entidad,
+  IndiceGeneral,
+  PosicionRanking,
+  PuntoSerie,
+  TopMercado,
+} from "../models";
 
 /* ---------- API real (guía de endpoints de Backend, camelCase) ---------- */
 
@@ -77,4 +83,30 @@ export function completarTop(top: TopMercado, entidades: Entidad[]): TopMercado 
     ganadores: top.ganadores.map(completar),
     perdedores: top.perdedores.map(completar),
   };
+}
+
+/* ---------- Ficha de entidad (HU-MO-04) ---------- */
+
+// Campos de la entidad Cotizacion de Backend (vela diaria del IC). El endpoint
+// de la serie aún no está publicado: si cambian los nombres, se ajusta aquí.
+export const desdeApiPunto = (p: any): PuntoSerie => ({
+  fecha: String(p.fecha).slice(0, 10),
+  apertura: p.apertura,
+  maximo: p.maximo,
+  minimo: p.minimo,
+  cierre: p.cierre,
+  variacionPct: p.variacionPct ?? undefined,
+});
+
+/**
+ * Posición de la entidad ordenando por IC de mayor a menor. Provisional:
+ * Backend todavía no publica el ranking de una entidad.
+ */
+export function posicionPorIndice(
+  entidades: Entidad[],
+  id: Entidad["id"],
+): PosicionRanking | null {
+  const orden = [...entidades].sort((a, b) => b.indice - a.indice);
+  const i = orden.findIndex((e) => e.id === id);
+  return i < 0 ? null : { posicion: i + 1, total: orden.length };
 }
