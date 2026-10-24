@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import {
   DataError,
@@ -31,6 +31,13 @@ export default function ChartsScreen({ entidadId }: Props) {
     error,
     reintentar,
   } = useFicha(entidadId);
+
+  useEffect(() => {
+    if (entidadId !== undefined) {
+      seleccionar(entidadId);
+    }
+  }, [entidadId, seleccionar]);
+
   const [tipo, setTipo] = useState<TipoGrafica>("velas");
   const [inspeccionando, setInspeccionando] = useState(false);
   const resumen = ficha ? resumenPeriodo(ficha.serie) : null;
