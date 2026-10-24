@@ -44,10 +44,25 @@ export default function App() {
   const [tab, setTab] = useState<TabKey>("tablero");
   const [entidadSeleccionada, setEntidadSeleccionada] = useState<number | undefined>(undefined);
 
-  const navegarAGraficas = useCallback((entidadId: number) => {
-    setEntidadSeleccionada(entidadId);
-    setTab("graficas");
+  // Pestañas ya visitadas: cada pantalla se monta la primera vez que se abre y
+  // después se mantiene cargada (se oculta, no se destruye). Así no se vuelven
+  // a pedir los datos ni se pierden filtros o selección al cambiar de pestaña.
+  const [visitadas, setVisitadas] = useState<TabKey[]>(["tablero"]);
+
+  const cambiarTab = useCallback((nueva: TabKey) => {
+    setTab(nueva);
+    setVisitadas((actuales) =>
+      actuales.includes(nueva) ? actuales : [...actuales, nueva],
+    );
   }, []);
+
+  const navegarAGraficas = useCallback(
+    (entidadId: number) => {
+      setEntidadSeleccionada(entidadId);
+      cambiarTab("graficas");
+    },
+    [cambiarTab],
+  );
 
   // Al abrir la app: recuperar la sesión guardada si el token sigue vigente
   useEffect(() => {
@@ -68,6 +83,7 @@ export default function App() {
     setSesionExpirada(porExpiracion);
     setToken(null);
     setTab("tablero");
+    setVisitadas(["tablero"]);
     setEntidadSeleccionada(undefined);
     await eliminarToken();
   }, []);
@@ -118,18 +134,30 @@ export default function App() {
     );
   }
 
-  // Con sesión: cabecera + pantalla + barra inferior
+  // Con sesión: cabecera + pantallas + barra inferior
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
       <SafeAreaView style={styles.screen} edges={["top"]}>
         <AppHeader onAvatarPress={() => cerrarSesion(false)} />
         <View style={styles.body}>
-          {tab === "tablero" && <HomeScreen />}
-          {tab === "graficas" && <ChartsScreen entidadId={entidadSeleccionada} />}
-          {tab === "ranking" && <RankingScreen onSeleccionarEntidad={navegarAGraficas} />}
+          {visitadas.includes("tablero") && (
+            <View style={tab === "tablero" ? styles.visible : styles.oculta}>
+              <HomeScreen />
+            </View>
+          )}
+          {visitadas.includes("graficas") && (
+            <View style={tab === "graficas" ? styles.visible : styles.oculta}>
+              <ChartsScreen entidadId={entidadSeleccionada} />
+            </View>
+          )}
+          {visitadas.includes("ranking") && (
+            <View style={tab === "ranking" ? styles.visible : styles.oculta}>
+              <RankingScreen onSeleccionarEntidad={navegarAGraficas} />
+            </View>
+          )}
         </View>
-        <BottomTabBar active={tab} onChange={setTab} />
+        <BottomTabBar active={tab} onChange={cambiarTab} />
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -138,6 +166,8 @@ export default function App() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   body: { flex: 1 },
+  visible: { flex: 1 },
+  oculta: { display: "none" },
   centrado: {
     flex: 1,
     justifyContent: "center",
