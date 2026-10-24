@@ -10,7 +10,8 @@ import { GraficaEntidad, TipoGrafica } from "../components/GraficaEntidad";
 import type { Entidad } from "../models";
 import { useFicha } from "../hooks/useFicha";
 import { PERIODOS, resumenPeriodo } from "../services/ficha";
-import { colors, spacing, radius, fontSize } from "../theme";
+import { PALETA_MERCADO } from "../services/datosMercado";
+import { spacing } from "../theme";
 import { fechaIso, num } from "../utils/formato";
 
 type Props = {
@@ -44,16 +45,28 @@ export default function ChartsScreen({ entidadId }: Props) {
   const sinEntidades = !cargando && !error && entidades.length === 0;
 
   return (
-    <ScrollView contentContainerStyle={styles.content} scrollEnabled={!inspeccionando}>
-      <Text style={styles.crumb}>Gráficas / Entidad</Text>
-      <Text style={styles.title}>Ficha de entidad</Text>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      scrollEnabled={!inspeccionando}
+    >
+      {/* Encabezado */}
+      <View style={styles.header}>
+        <Text style={styles.crumb}>Gráficas / Entidad</Text>
+        <Text style={styles.title}>Ficha de entidad</Text>
+        <Text style={styles.subtitle}>
+          Índice, variación y evolución de la entidad en el periodo elegido.
+        </Text>
+      </View>
 
       {/* Selector de entidad */}
       {entidades.length > 0 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}>
+          contentContainerStyle={styles.chips}
+        >
           {entidades.map((e) => {
             const activo = e.id === seleccion;
             return (
@@ -62,7 +75,8 @@ export default function ChartsScreen({ entidadId }: Props) {
                 onPress={() => seleccionar(e.id)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: activo }}
-                style={[styles.chip, activo && styles.chipActivo]}>
+                style={[styles.chip, activo && styles.chipActivo]}
+              >
                 <Text style={[styles.chipTexto, activo && styles.chipTextoActivo]}>
                   {e.nombre}
                 </Text>
@@ -74,21 +88,39 @@ export default function ChartsScreen({ entidadId }: Props) {
 
       {cargando && !ficha && <LoadingIndicator message="Cargando ficha..." />}
       {error && <DataError message={error} onRetry={reintentar} />}
-      {sinEntidades && <EmptyState message="No hay entidades para mostrar" detail="Intenta más tarde." />}
+      {sinEntidades && (
+        <EmptyState message="No hay entidades para mostrar" detail="Intenta más tarde." />
+      )}
 
       {ficha && (
         <>
           {/* Cabecera: índice, variación y ranking */}
           <View style={styles.card}>
-            <Text style={styles.nombre}>{ficha.entidad.nombre}</Text>
-            <Text style={styles.soft}>
-              {[ficha.entidad.codigo, ficha.entidad.sector].filter(Boolean).join(" · ")}
-            </Text>
-            <View style={styles.fila}>
-              <Text style={styles.valor}>{num(ficha.entidad.indice, 1)}</Text>
+            <View style={styles.cardTop}>
+              <View style={styles.cardTitleBlock}>
+                <Text style={styles.nombre} numberOfLines={1}>
+                  {ficha.entidad.nombre}
+                </Text>
+                <View style={styles.metaRow}>
+                  {!!ficha.entidad.codigo && (
+                    <Text style={styles.codigo}>{ficha.entidad.codigo}</Text>
+                  )}
+                  {!!ficha.entidad.sector && (
+                    <View style={styles.sectorBadge}>
+                      <Text style={styles.sectorText}>{ficha.entidad.sector}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
               <Variation value={ficha.entidad.variacionPct} style={styles.variacion} />
             </View>
-            <Text style={styles.soft}>Índice de competitividad</Text>
+
+            <View style={styles.indiceRow}>
+              <Text style={styles.indiceLabel}>IC</Text>
+              <Text style={styles.valor}>{num(ficha.entidad.indice, 1)}</Text>
+              <Text style={styles.soft}>Índice de competitividad</Text>
+            </View>
+
             {ficha.ranking && (
               <View style={styles.ranking}>
                 <Text style={styles.rankingTexto}>
@@ -118,7 +150,10 @@ export default function ChartsScreen({ entidadId }: Props) {
           {/* Gráfica del periodo */}
           <View style={[styles.card, styles.cardGrafica]}>
             {ficha.serie.length === 0 ? (
-              <EmptyState message="Sin datos para este periodo" detail="Prueba con otro periodo." />
+              <EmptyState
+                message="Sin datos para este periodo"
+                detail="Prueba con otro periodo."
+              />
             ) : (
               <GraficaEntidad
                 key={`${String(ficha.entidad.id)}-${ficha.periodo}-${tipo}`}
@@ -151,16 +186,18 @@ export default function ChartsScreen({ entidadId }: Props) {
             </View>
           )}
 
-          <Text style={styles.nota}>
-            {ficha.serie.length > 0 &&
-              `Del ${fechaIso(ficha.serie[0].fecha)} al ${fechaIso(
-                ficha.serie[ficha.serie.length - 1].fecha,
-              )}`}
-            {ficha.ejemplo ? " · Datos de ejemplo" : ""}
-          </Text>
+          {/* Pie informativo */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              {ficha.serie.length > 0 &&
+                `Del ${fechaIso(ficha.serie[0].fecha)} al ${fechaIso(
+                  ficha.serie[ficha.serie.length - 1].fecha,
+                )}`}
+              {ficha.ejemplo ? " · Datos de ejemplo" : ""}
+            </Text>
+          </View>
         </>
       )}
-      <View style={styles.footer} />
     </ScrollView>
   );
 }
@@ -182,7 +219,8 @@ function Segmento({ opciones, valor, onCambio }: SegmentoProps) {
             onPress={() => onCambio(o.clave)}
             accessibilityRole="button"
             accessibilityState={{ selected: activo }}
-            style={[styles.segmentoOpcion, activo && styles.segmentoActivo]}>
+            style={[styles.segmentoOpcion, activo && styles.segmentoActivo]}
+          >
             <Text style={[styles.segmentoTexto, activo && styles.segmentoTextoActivo]}>
               {o.etiqueta}
             </Text>
@@ -194,125 +232,220 @@ function Segmento({ opciones, valor, onCambio }: SegmentoProps) {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.lg, gap: spacing.md },
+  screen: { flex: 1, backgroundColor: PALETA_MERCADO.fondoClaro },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl * 2,
+    gap: spacing.md,
+  },
+  header: { marginBottom: 2 },
   crumb: {
     fontFamily: "Manrope_500Medium",
-    fontSize: 13,
-    color: colors.textLight,
+    fontSize: 12,
+    color: PALETA_MERCADO.textoMuted,
+    marginBottom: 2,
   },
   title: {
     fontFamily: "Manrope_800ExtraBold",
-    fontSize: 28,
-    color: colors.text,
+    fontSize: 26,
+    color: PALETA_MERCADO.azulNoche,
+    letterSpacing: -0.3,
   },
-  chips: { gap: spacing.sm },
+  subtitle: {
+    fontFamily: "Manrope_400Regular",
+    fontSize: 13,
+    color: PALETA_MERCADO.textoMuted,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+
+  /* Selector de entidad */
+  chips: { gap: 8, paddingVertical: 2 },
   chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.chip,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: PALETA_MERCADO.blanco,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
   },
-  chipActivo: { backgroundColor: colors.blue },
+  chipActivo: {
+    backgroundColor: PALETA_MERCADO.azulNoche,
+    borderColor: PALETA_MERCADO.azulNoche,
+  },
   chipTexto: {
     fontFamily: "Manrope_600SemiBold",
-    fontSize: fontSize.md,
-    color: colors.text,
+    fontSize: 12,
+    color: PALETA_MERCADO.azulNoche,
   },
-  chipTextoActivo: { color: colors.white },
+  chipTextoActivo: { color: PALETA_MERCADO.blanco },
+
+  /* Tarjetas */
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    backgroundColor: PALETA_MERCADO.blanco,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
+    borderColor: PALETA_MERCADO.bordeClaro,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  cardGrafica: { paddingHorizontal: spacing.sm, paddingVertical: spacing.md },
+  cardGrafica: { paddingHorizontal: 8, paddingVertical: 12 },
+  cardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  cardTitleBlock: { flex: 1 },
   nombre: {
-    fontFamily: "Manrope_800ExtraBold",
-    fontSize: fontSize.xl,
-    color: colors.text,
+    fontFamily: "Manrope_700Bold",
+    fontSize: 17,
+    color: PALETA_MERCADO.azulNoche,
   },
-  soft: {
-    fontFamily: "Manrope_400Regular",
-    fontSize: fontSize.md,
-    color: colors.textLight,
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 2,
   },
-  fila: {
+  codigo: {
+    fontFamily: "Manrope_500Medium",
+    fontSize: 11,
+    color: PALETA_MERCADO.textoMuted,
+  },
+  sectorBadge: {
+    backgroundColor: "#EBF3FA",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderWidth: 1,
+    borderColor: "#D0E2F2",
+  },
+  sectorText: {
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 10,
+    color: PALETA_MERCADO.azulAcero,
+  },
+  variacion: { fontSize: 13 },
+  indiceRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: spacing.md,
-    marginTop: spacing.sm,
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  indiceLabel: {
+    fontFamily: "Manrope_700Bold",
+    fontSize: 12,
+    color: PALETA_MERCADO.textoMuted,
   },
   valor: {
     fontFamily: "Manrope_800ExtraBold",
-    fontSize: 40,
-    color: colors.text,
+    fontSize: 36,
+    color: PALETA_MERCADO.azulNoche,
     fontVariant: ["tabular-nums"],
   },
-  variacion: { fontSize: fontSize.lg },
+  soft: {
+    fontFamily: "Manrope_400Regular",
+    fontSize: 12,
+    color: PALETA_MERCADO.textoMuted,
+    flexShrink: 1,
+  },
   ranking: {
     alignSelf: "flex-start",
-    backgroundColor: colors.blueSoft,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    marginTop: spacing.md,
+    backgroundColor: "#EBF3FA",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#D0E2F2",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginTop: 12,
   },
   rankingTexto: {
     fontFamily: "Manrope_700Bold",
-    fontSize: fontSize.sm,
-    color: colors.blue,
+    fontSize: 11,
+    color: PALETA_MERCADO.azulAcero,
   },
-  controles: { flexDirection: "row", gap: spacing.sm },
+
+  /* Controles */
+  controles: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   segmento: {
     flexDirection: "row",
-    backgroundColor: colors.chip,
-    borderRadius: radius.md,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 10,
     padding: 3,
   },
   segmentoOpcion: {
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md - 2,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
   },
-  segmentoActivo: { backgroundColor: colors.surface },
+  segmentoActivo: {
+    backgroundColor: PALETA_MERCADO.blanco,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
   segmentoTexto: {
     fontFamily: "Manrope_600SemiBold",
-    fontSize: 13,
-    color: colors.textLight,
+    fontSize: 12,
+    color: PALETA_MERCADO.textoMuted,
   },
-  segmentoTextoActivo: { color: colors.text },
+  segmentoTextoActivo: { color: PALETA_MERCADO.azulNoche },
+
+  /* Gráfica */
   ayuda: {
     fontFamily: "Manrope_400Regular",
-    fontSize: fontSize.sm,
-    color: colors.textLight,
+    fontSize: 11,
+    color: PALETA_MERCADO.textoMuted,
     textAlign: "center",
-    marginTop: spacing.sm,
+    marginTop: 8,
   },
-  celdas: { flexDirection: "row", gap: spacing.sm },
+
+  /* Resumen del periodo */
+  celdas: { flexDirection: "row", gap: 8 },
   celda: {
     flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    backgroundColor: PALETA_MERCADO.blanco,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.sm,
+    borderColor: PALETA_MERCADO.bordeClaro,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    alignItems: "center",
   },
   celdaNombre: {
-    fontFamily: "Manrope_600SemiBold",
-    fontSize: fontSize.sm,
-    color: colors.textLight,
+    fontFamily: "Manrope_500Medium",
+    fontSize: 10,
+    color: PALETA_MERCADO.textoMuted,
+    marginBottom: 2,
   },
   celdaValor: {
     fontFamily: "Manrope_700Bold",
-    fontSize: fontSize.lg,
-    color: colors.text,
+    fontSize: 14,
+    color: PALETA_MERCADO.azulNoche,
     fontVariant: ["tabular-nums"],
   },
-  nota: {
-    fontFamily: "Manrope_400Regular",
-    fontSize: fontSize.sm,
-    color: colors.textLight,
+
+  /* Pie */
+  footer: {
+    alignItems: "center",
+    paddingVertical: spacing.md,
+    marginTop: 4,
   },
-  footer: { height: spacing.lg },
+  footerText: {
+    fontFamily: "Manrope_400Regular",
+    fontSize: 11,
+    color: PALETA_MERCADO.textoMuted,
+    textAlign: "center",
+    lineHeight: 16,
+  },
 });
