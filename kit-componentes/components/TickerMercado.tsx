@@ -1,3 +1,5 @@
+/*HU-MO-02 CREACION DEL TICKER DESPLAZABLE*/
+
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
