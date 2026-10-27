@@ -19,8 +19,23 @@ import { ErrorApi, type ProblemDetails } from "../utils/errores";
 // Ruta base de la API; por confirmar con Backend (la guía propone /api/v1).
 const PREFIJO = process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1";
 
-export const usarMocks = () => process.env.EXPO_PUBLIC_USAR_MOCKS === "true";
-const escenario = () => process.env.EXPO_PUBLIC_MOCK_ESCENARIO ?? "normal";
+
+export const usarMocks = () =>
+  process.env.EXPO_PUBLIC_USAR_MOCKS === "true";
+
+const escenario = () =>
+  process.env.EXPO_PUBLIC_MOCK_ESCENARIO ?? "normal";
+
+/**
+ * HU-MO-02: permite comparar los valores originales
+ * con los mocks fijos utilizados por Web.
+ *
+ * true  = los valores se mantienen fijos.
+ * false = conserva la simulación dinámica existente.
+ */
+const usarMocksFijos = () =>
+  process.env.EXPO_PUBLIC_MOCK_FIJO === "true";
+
 
 /* ------------------------------ API real ------------------------------ */
 
@@ -116,7 +131,20 @@ export async function getIndice(): Promise<IndiceGeneral> {
 
 /** Carga todo lo que necesita el tablero; se usa al abrir y al deslizar para actualizar. */
 export async function cargarMercado(): Promise<DatosMercado> {
-  if (usarMocks()) corte = cargas++;
-  const [entidades, top, indice] = await Promise.all([getEntidades(), getTop(), getIndice()]);
-  return { entidades, top: completarTop(top, entidades), indice, ejemplo: usarMocks() };
+  if (usarMocks()) {
+    corte = usarMocksFijos() ? 0 : cargas++;
+  }
+
+  const [entidades, top, indice] = await Promise.all([
+    getEntidades(),
+    getTop(),
+    getIndice(),
+  ]);
+
+  return {
+    entidades,
+    top: completarTop(top, entidades),
+    indice,
+    ejemplo: usarMocks(),
+  };
 }
