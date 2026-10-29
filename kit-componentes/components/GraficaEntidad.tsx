@@ -41,6 +41,8 @@ function etiquetaFecha(fecha: string, periodo: Periodo, corta: boolean): string 
   return corta ? `${dia}/${mes}` : fechaIso(fecha);
 }
 
+const DIA_MS = 86_400_000;
+
 export function GraficaEntidad({
   serie,
   tipo,
@@ -53,6 +55,13 @@ export function GraficaEntidad({
   const activa = useRef(false);
   const inicio = useRef({ x: 0, y: 0 });
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Si la serie diaria abarca más de un año, "día/mes" repetiría fechas de
+  // años distintos en el eje (01/09 y 01/09): se muestra mes/año.
+  const abarcaMasDeUnAnio =
+    serie.length > 1 &&
+    (Date.parse(serie[serie.length - 1].fecha) - Date.parse(serie[0].fecha)) / DIA_MS > 365;
+  const periodoEje: Periodo = periodo === "Diaria" && abarcaMasDeUnAnio ? "Mensual" : periodo;
 
   // ----- escalas -----
   const anchoUtil = Math.max(ancho - M.izq - M.der, 1);
@@ -217,7 +226,7 @@ export function GraficaEntidad({
               n === 1 && { left: x(i) - 20, width: 40, textAlign: "center" },
               n === 2 && { right: M.der },
             ]}>
-            {serie[i] ? etiquetaFecha(serie[i].fecha, periodo, true) : ""}
+            {serie[i] ? etiquetaFecha(serie[i].fecha, periodoEje, true) : ""}
           </Text>
         ))}
 
