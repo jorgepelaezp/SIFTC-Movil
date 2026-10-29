@@ -9,18 +9,22 @@ import {
   View,
 } from "react-native";
 import {
-  ENTIDADES_MERCADO,
   EntidadMercado,
   PALETA_MERCADO,
   formatearIndice,
   formatearVariacion,
 } from "../services/datosMercado";
+import { aEntidadMercado } from "../services/adaptadores";
+import { useEntidades } from "../hooks/useEntidades";
 
 interface Props {
+  /** Sin esta prop, el ticker usa las entidades de la API (o los mocks). */
   entidades?: EntidadMercado[];
 }
 
-export function TickerMercado({ entidades = ENTIDADES_MERCADO }: Props) {
+export function TickerMercado({ entidades: propias }: Props) {
+  const cargadas = useEntidades();
+  const entidades = propias ?? cargadas.map(aEntidadMercado);
   const [contentWidth, setContentWidth] = useState(0);
   const animX = useRef(new Animated.Value(0)).current;
 
@@ -97,6 +101,14 @@ export function TickerMercado({ entidades = ENTIDADES_MERCADO }: Props) {
     </View>
   );
 
+  if (entidades.length === 0) {
+    return (
+      <View style={styles.tickerContainer}>
+        <Text style={styles.emptyText}>Sin cotizaciones disponibles</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.tickerContainer}>
       <Animated.View
@@ -157,6 +169,12 @@ const styles = StyleSheet.create({
   variationText: {
     fontFamily: "Manrope_600SemiBold",
     fontSize: 12,
+  },
+  emptyText: {
+    color: "#94A3B8",
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 12,
+    textAlign: "center",
   },
   separator: {
     color: "#334155",

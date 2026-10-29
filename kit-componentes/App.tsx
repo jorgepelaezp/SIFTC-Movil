@@ -42,7 +42,7 @@ export default function App() {
   const [restaurando, setRestaurando] = useState(true);
   const [sesionExpirada, setSesionExpirada] = useState(false);
   const [tab, setTab] = useState<TabKey>("tablero");
-  const [entidadSeleccionada, setEntidadSeleccionada] = useState<number | undefined>(undefined);
+  const [entidadSeleccionada, setEntidadSeleccionada] = useState<string | undefined>(undefined);
 
   // Pestañas ya visitadas: cada pantalla se monta la primera vez que se abre y
   // después se mantiene cargada (se oculta, no se destruye). Así no se vuelven
@@ -57,7 +57,7 @@ export default function App() {
   }, []);
 
   const navegarAGraficas = useCallback(
-    (entidadId: number) => {
+    (entidadId: string) => {
       setEntidadSeleccionada(entidadId);
       cambiarTab("graficas");
     },

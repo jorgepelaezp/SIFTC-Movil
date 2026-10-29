@@ -28,7 +28,7 @@ export default function HomeScreen() {
         />
       }>
       <Text style={styles.title}>Tablero de mercado</Text>
-      {datos && (
+      {datos?.indice && (
         <Text style={styles.subtitle}>Cierre del {fechaIso(datos.indice.fecha)}</Text>
       )}
 
@@ -41,7 +41,15 @@ export default function HomeScreen() {
 
       {datos && !vacio && (
         <>
-          <IndexCard indice={datos.indice} ejemplo={datos.ejemplo} />
+          {datos.indice ? (
+            <IndexCard indice={datos.indice} ejemplo={datos.ejemplo} />
+          ) : (
+            // Backend aún no publica el índice general del mercado
+            <EmptyState
+              message="Índice general no disponible"
+              detail="El servidor todavía no publica este dato."
+            />
+          )}
           <DaySummary
             entidades={datos.entidades}
             mayorSubida={datos.top.ganadores[0]}

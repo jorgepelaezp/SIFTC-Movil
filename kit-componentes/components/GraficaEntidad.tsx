@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { GestureResponderEvent, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
-import type { PuntoSerie } from "../models";
+import type { Periodo, PuntoSerie } from "../models";
 import { colors, radius, spacing } from "../theme";
 import { fechaIso, num, pct } from "../utils/formato";
 
@@ -23,14 +23,31 @@ type Props = {
   serie: PuntoSerie[];
   tipo: TipoGrafica;
   altura?: number;
+  /** Frecuencia de las velas: define cómo se escriben las fechas */
+  periodo?: Periodo;
   /** Avisa cuando empieza y termina la inspección, para bloquear el scroll. */
   onInspeccion?: (activa: boolean) => void;
 };
 
-/** "2026-10-07" -> "07/10" (las etiquetas cortas se leen mejor en 5 pulgadas) */
-const diaMes = (fecha: string) => fechaIso(fecha).slice(0, 5);
+/**
+ * Fecha de una vela según su frecuencia. Cortas para el eje (se leen mejor en
+ * 5 pulgadas): "07/10", "10/26", "T4 26"; completas para el recuadro.
+ */
+function etiquetaFecha(fecha: string, periodo: Periodo, corta: boolean): string {
+  const [anio, mes, dia] = fecha.split("-");
+  const a = corta ? anio.slice(2) : anio;
+  if (periodo === "Mensual") return `${mes}/${a}`;
+  if (periodo === "Trimestral") return `T${Math.ceil(Number(mes) / 3)} ${a}`;
+  return corta ? `${dia}/${mes}` : fechaIso(fecha);
+}
 
-export function GraficaEntidad({ serie, tipo, altura = 240, onInspeccion }: Props) {
+export function GraficaEntidad({
+  serie,
+  tipo,
+  altura = 240,
+  periodo = "Diaria",
+  onInspeccion,
+}: Props) {
   const [ancho, setAncho] = useState(0);
   const [elegido, setElegido] = useState<number | null>(null);
   const activa = useRef(false);
@@ -200,7 +217,7 @@ export function GraficaEntidad({ serie, tipo, altura = 240, onInspeccion }: Prop
               n === 1 && { left: x(i) - 20, width: 40, textAlign: "center" },
               n === 2 && { right: M.der },
             ]}>
-            {serie[i] ? diaMes(serie[i].fecha) : ""}
+            {serie[i] ? etiquetaFecha(serie[i].fecha, periodo, true) : ""}
           </Text>
         ))}
 
@@ -228,7 +245,7 @@ export function GraficaEntidad({ serie, tipo, altura = 240, onInspeccion }: Prop
             // Arriba o abajo según dónde esté el punto, para no taparlo
             y(punto.cierre) < M.arr + altoUtil / 2 ? { bottom: M.aba } : { top: 0 },
           ]}>
-          <Text style={styles.recuadroFecha}>{fechaIso(punto.fecha)}</Text>
+          <Text style={styles.recuadroFecha}>{etiquetaFecha(punto.fecha, periodo, false)}</Text>
           {(
             [
               ["Apertura", punto.apertura],

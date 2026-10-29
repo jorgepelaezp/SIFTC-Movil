@@ -25,7 +25,7 @@ export function useMercado() {
     else setCargando(true);
 
     try {
-      const nuevos = await cargarMercado();
+      const nuevos = await cargarMercado(esRefresco);
       if (!montado.current) return;
       setDatos(nuevos);
       setError(null);

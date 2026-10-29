@@ -1,22 +1,24 @@
 // Datos de la ficha de entidad (HU-MO-04). La pantalla solo usa estas funciones.
 //  - EXPO_PUBLIC_USAR_MOCKS=true -> velas de ejemplo generadas a partir de los
 //    mocks de Rafael: terminan en el IC y la variación de cada entidad.
-//  - en cualquier otro caso      -> API real. La ruta es la de la guía de
-//    endpoints; Backend aún no la publica ni decide entre
-//    /entidades/{id}/ohlc y /series/{id} (docs/REVISION_BACKEND_SPRINT2.md).
-import type { Entidad, FichaEntidad, Periodo, PuntoSerie } from "../models";
-import { pedir, simularRed, usarMocks } from "./mercado";
-import { desdeApiPunto, posicionPorIndice } from "./adaptadores";
+//  - en cualquier otro caso      -> API real:
+//      GET /entidades/{id}/ohlc?periodo=Diaria|Mensual|Trimestral  (serie)
+//      GET /ranking?periodo=diario|mensual|trimestral               (puesto)
+import type { Entidad, FichaEntidad, Periodo, PosicionRanking, PuntoSerie } from "../models";
+import { getRanking, pedir, simularRed, usarMocks } from "./mercado";
+import type { PeriodoRanking } from "./mercado";
+import { desdeApiOhlc, posicionPorIndice } from "./adaptadores";
 import { MOCK_INDICE_GENERAL } from "./mocks";
 
-export const PERIODOS: { clave: Periodo; etiqueta: string; dias: number }[] = [
-  { clave: "1S", etiqueta: "1 sem", dias: 7 },
-  { clave: "1M", etiqueta: "1 mes", dias: 30 },
-  { clave: "3M", etiqueta: "3 meses", dias: 90 },
+// El periodo es la frecuencia de cada vela, como en Backend y en el ranking
+export const PERIODOS: { clave: Periodo; etiqueta: string; ranking: PeriodoRanking }[] = [
+  { clave: "Diaria", etiqueta: "Diario", ranking: "diario" },
+  { clave: "Mensual", etiqueta: "Mensual", ranking: "mensual" },
+  { clave: "Trimestral", etiqueta: "Trimestral", ranking: "trimestral" },
 ];
 
-const diasDe = (periodo: Periodo) =>
-  PERIODOS.find((p) => p.clave === periodo)?.dias ?? 30;
+// HU-MO-04 CA2: más velas que estas no se leen bien en 5 pulgadas
+const MAX_VELAS = 60;
 
 /* ------------------------------- Mocks -------------------------------- */
 
@@ -37,13 +39,20 @@ function restarDias(fechaIso: string, dias: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Semilla numérica estable a partir del id (UUID o código ENT001). */
+function semilla(id: string): number {
+  let h = 7;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 233280;
+  return h;
+}
+
 /**
- * Serie de ejemplo de 90 días que termina en la fecha de los mocks, con el IC
- * de la entidad como último cierre y su variación como último cambio.
+ * Serie diaria de ejemplo de dos años que termina en la fecha de los mocks,
+ * con el IC de la entidad como último cierre y su variación como último cambio.
  */
-function serieMock(entidad: Entidad): PuntoSerie[] {
-  const azar = generador(typeof entidad.id === "number" ? entidad.id : 1);
-  const total = 90;
+function serieDiariaMock(entidad: Entidad): PuntoSerie[] {
+  const azar = generador(semilla(entidad.id));
+  const total = 730;
   const cierres: number[] = new Array(total);
   cierres[total - 1] = entidad.indice;
   cierres[total - 2] = entidad.indice / (1 + entidad.variacionPct / 100);
@@ -53,17 +62,41 @@ function serieMock(entidad: Entidad): PuntoSerie[] {
 
   return cierres.map((cierre, i) => {
     const apertura = i === 0 ? cierre * (1 + (azar() - 0.5) * 0.01) : cierres[i - 1];
-    const maximo = Math.max(apertura, cierre) + azar() * 0.6;
-    const minimo = Math.min(apertura, cierre) - azar() * 0.6;
     return {
       fecha: restarDias(MOCK_INDICE_GENERAL.fecha, total - 1 - i),
       apertura: redondear(apertura),
-      maximo: redondear(maximo),
-      minimo: redondear(minimo),
+      maximo: redondear(Math.max(apertura, cierre) + azar() * 0.6),
+      minimo: redondear(Math.min(apertura, cierre) - azar() * 0.6),
       cierre: redondear(cierre),
       variacionPct:
         i === 0 ? undefined : Math.round(((cierre - cierres[i - 1]) / cierres[i - 1]) * 1e4) / 100,
     };
+  });
+}
+
+/** Agrupa velas diarias en mensuales o trimestrales (como lo calcularía Backend). */
+function agrupar(diaria: PuntoSerie[], periodo: Periodo): PuntoSerie[] {
+  if (periodo === "Diaria") return diaria;
+  const grupos = new Map<string, PuntoSerie[]>();
+  for (const p of diaria) {
+    const [anio, mes] = p.fecha.split("-").map(Number);
+    const clave = periodo === "Mensual" ? `${anio}-${mes}` : `${anio}-T${Math.ceil(mes / 3)}`;
+    grupos.set(clave, [...(grupos.get(clave) ?? []), p]);
+  }
+  let anterior: number | undefined;
+  return Array.from(grupos.values()).map((velas) => {
+    const cierre = velas[velas.length - 1].cierre;
+    const punto: PuntoSerie = {
+      fecha: velas[0].fecha,
+      apertura: velas[0].apertura,
+      maximo: Math.max(...velas.map((v) => v.maximo)),
+      minimo: Math.min(...velas.map((v) => v.minimo)),
+      cierre,
+      variacionPct:
+        anterior === undefined ? undefined : Math.round(((cierre - anterior) / anterior) * 1e4) / 100,
+    };
+    anterior = cierre;
+    return punto;
   });
 }
 
@@ -72,10 +105,34 @@ function serieMock(entidad: Entidad): PuntoSerie[] {
 export async function getSerie(entidad: Entidad, periodo: Periodo): Promise<PuntoSerie[]> {
   if (usarMocks()) {
     await simularRed();
-    return serieMock(entidad).slice(-diasDe(periodo));
+    return agrupar(serieDiariaMock(entidad), periodo).slice(-MAX_VELAS);
   }
-  const datos = await pedir<any[]>(`/entidades/${entidad.id}/ohlc?periodo=${periodo}`);
-  return datos.map(desdeApiPunto);
+  const respuesta = await pedir<any>(
+    `/entidades/${encodeURIComponent(entidad.id)}/ohlc?periodo=${periodo}`,
+  );
+  return desdeApiOhlc(respuesta).slice(-MAX_VELAS);
+}
+
+/**
+ * Puesto de la entidad. Con la API real sale de GET /ranking; si el ranking no
+ * responde (por ejemplo 503) o la entidad no aparece, la ficha se muestra sin puesto.
+ */
+async function getPosicion(
+  entidad: Entidad,
+  entidades: Entidad[],
+  periodo: Periodo,
+): Promise<PosicionRanking | null> {
+  if (usarMocks()) return posicionPorIndice(entidades, entidad.id);
+  const ranking = PERIODOS.find((p) => p.clave === periodo)?.ranking;
+  try {
+    const items = await getRanking({ periodo: ranking });
+    const item = items.find((i) => i.entidadId === entidad.id);
+    return item
+      ? { posicion: item.posicion, total: items.length, cambio: item.cambioPosicion }
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Todo lo que necesita la ficha; se usa al elegir entidad o periodo. */
@@ -84,14 +141,11 @@ export async function cargarFicha(
   entidades: Entidad[],
   periodo: Periodo,
 ): Promise<FichaEntidad> {
-  const serie = await getSerie(entidad, periodo);
-  return {
-    entidad,
-    ranking: posicionPorIndice(entidades, entidad.id),
-    periodo,
-    serie,
-    ejemplo: usarMocks(),
-  };
+  const [serie, ranking] = await Promise.all([
+    getSerie(entidad, periodo),
+    getPosicion(entidad, entidades, periodo),
+  ]);
+  return { entidad, ranking, periodo, serie, ejemplo: usarMocks() };
 }
 
 /** Resumen del periodo para las tarjetas bajo la gráfica. */

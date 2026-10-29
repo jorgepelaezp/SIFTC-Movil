@@ -5,7 +5,8 @@
  */
 
 export interface EntidadMercado {
-  id?: number;
+  /** UUID en la API real; código (ENT001) en los datos de ejemplo */
+  id?: string;
   codigo_entidad: string;
   nombre_entidad: string;
   sector: string;
@@ -51,7 +52,7 @@ export const PALETA_MERCADO = {
 
 export const ENTIDADES_MERCADO: EntidadMercado[] = [
   {
-    id: 1,
+    id: "ENT001",
     codigo_entidad: "ENT001",
     nombre_entidad: "Entidad Alfa",
     sector: "Energía",
@@ -65,7 +66,7 @@ export const ENTIDADES_MERCADO: EntidadMercado[] = [
     crecimiento: 80.9,
   },
   {
-    id: 2,
+    id: "ENT002",
     codigo_entidad: "ENT002",
     nombre_entidad: "Entidad Beta",
     sector: "Finanzas",
@@ -79,7 +80,7 @@ export const ENTIDADES_MERCADO: EntidadMercado[] = [
     crecimiento: 74.9,
   },
   {
-    id: 3,
+    id: "ENT003",
     codigo_entidad: "ENT003",
     nombre_entidad: "Entidad Gamma",
     sector: "Tecnología",
@@ -93,7 +94,7 @@ export const ENTIDADES_MERCADO: EntidadMercado[] = [
     crecimiento: 79.7,
   },
   {
-    id: 4,
+    id: "ENT004",
     codigo_entidad: "ENT004",
     nombre_entidad: "Entidad Delta",
     sector: "Salud",
@@ -107,7 +108,7 @@ export const ENTIDADES_MERCADO: EntidadMercado[] = [
     crecimiento: 72.6,
   },
   {
-    id: 5,
+    id: "ENT005",
     codigo_entidad: "ENT005",
     nombre_entidad: "Entidad Épsilon",
     sector: "Comercio",
@@ -121,7 +122,7 @@ export const ENTIDADES_MERCADO: EntidadMercado[] = [
     crecimiento: 66.9,
   },
   {
-    id: 6,
+    id: "ENT006",
     codigo_entidad: "ENT006",
     nombre_entidad: "Entidad Zeta",
     sector: "Transporte",
@@ -135,7 +136,7 @@ export const ENTIDADES_MERCADO: EntidadMercado[] = [
     crecimiento: 61.0,
   },
   {
-    id: 7,
+    id: "ENT007",
     codigo_entidad: "ENT007",
     nombre_entidad: "Entidad Eta",
     sector: "Energía",
@@ -149,7 +150,7 @@ export const ENTIDADES_MERCADO: EntidadMercado[] = [
     crecimiento: 56.2,
   },
   {
-    id: 8,
+    id: "ENT008",
     codigo_entidad: "ENT008",
     nombre_entidad: "Entidad Theta",
     sector: "Finanzas",
@@ -163,7 +164,7 @@ export const ENTIDADES_MERCADO: EntidadMercado[] = [
     crecimiento: 59.4,
   },
   {
-    id: 9,
+    id: "ENT009",
     codigo_entidad: "ENT009",
     nombre_entidad: "Entidad Iota",
     sector: "Salud",
@@ -177,7 +178,7 @@ export const ENTIDADES_MERCADO: EntidadMercado[] = [
     crecimiento: 50.5,
   },
   {
-    id: 10,
+    id: "ENT010",
     codigo_entidad: "ENT010",
     nombre_entidad: "Entidad Kappa",
     sector: "Comercio",
@@ -273,7 +274,8 @@ export function obtenerTop10Ranking(
  * Formatea número con coma decimal al estilo colombiano es-CO
  */
 export function formatearNumeroCO(valor: number, decimales = 1): string {
-  if (valor === undefined || valor === null || isNaN(valor)) return "0,0";
+  // Sin dato (null en la API): "–" en vez de "0,0" para no mostrar un valor falso
+  if (valor === undefined || valor === null || isNaN(valor)) return "–";
   const fijo = valor.toFixed(decimales);
   const partes = fijo.split(".");
   return `${partes[0]},${partes[1]}`;
@@ -302,7 +304,7 @@ export function formatearVariacion(valor: number): {
   const signo = esPositivo ? "+" : esNegativo ? "-" : "";
   const icono = esPositivo ? "▲" : esNegativo ? "▼" : "–";
   const numAbs = formatearNumeroCO(Math.abs(valor), 2);
-  const texto = `${signo}${numAbs} %`;
+  const texto = Number.isFinite(valor) ? `${signo}${numAbs} %` : "–";
   return { texto, signo, icono, esPositivo, esNegativo };
 }
 

@@ -124,7 +124,10 @@ export default function ChartsScreen({ entidadId }: Props) {
             {ficha.ranking && (
               <View style={styles.ranking}>
                 <Text style={styles.rankingTexto}>
-                  Puesto {ficha.ranking.posicion} de {ficha.ranking.total} por índice
+                  Puesto {ficha.ranking.posicion} de {ficha.ranking.total}
+                  {ficha.ejemplo ? " por índice" : ""}
+                  {!!ficha.ranking.cambio &&
+                    ` · ${ficha.ranking.cambio > 0 ? "▲" : "▼"} ${Math.abs(ficha.ranking.cambio)}`}
                 </Text>
               </View>
             )}
@@ -159,6 +162,7 @@ export default function ChartsScreen({ entidadId }: Props) {
                 key={`${String(ficha.entidad.id)}-${ficha.periodo}-${tipo}`}
                 serie={ficha.serie}
                 tipo={tipo}
+                periodo={ficha.periodo}
                 onInspeccion={setInspeccionando}
               />
             )}

@@ -2,7 +2,8 @@
 // services/adaptadores.ts, así las pantallas no dependen de los nombres de campo.
 
 export interface Entidad {
-  id: number;
+  /** UUID en la API real; código (ENT001) en los datos de ejemplo */
+  id: string;
   codigo: string;
   nombre: string;
   sector: string;
@@ -34,7 +35,8 @@ export interface TopMercado {
 export interface DatosMercado {
   entidades: Entidad[];
   top: TopMercado;
-  indice: IndiceGeneral;
+  /** null: Backend aún no publica el índice general del mercado */
+  indice: IndiceGeneral | null;
   /** true cuando los datos son de ejemplo (mocks) y no de la API real */
   ejemplo: boolean;
 }
@@ -51,16 +53,32 @@ export interface PuntoSerie {
   variacionPct?: number;
 }
 
-export type Periodo = "1S" | "1M" | "3M";
+/** Frecuencia de las velas, como la recibe GET /entidades/{id}/ohlc */
+export type Periodo = "Diaria" | "Mensual" | "Trimestral";
 
 export interface PosicionRanking {
   posicion: number;
   total: number;
+  /** Puestos ganados (+) o perdidos (-) frente al corte anterior */
+  cambio?: number;
+}
+
+/** Fila de GET /ranking con el código de la entidad completado */
+export interface ItemRanking {
+  posicion: number;
+  cambioPosicion: number;
+  entidadId: string;
+  nombre: string;
+  codigo: string;
+  sector: string;
+  /** IC, o el puntaje de la dimensión cuando se filtra por una */
+  ic: number;
+  variacionPct: number;
 }
 
 export interface FichaEntidad {
   entidad: Entidad;
-  /** null mientras Backend no entregue el ranking de la entidad */
+  /** null si /ranking no responde o la entidad no aparece en él */
   ranking: PosicionRanking | null;
   periodo: Periodo;
   serie: PuntoSerie[];

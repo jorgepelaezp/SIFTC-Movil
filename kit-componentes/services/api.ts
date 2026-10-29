@@ -3,6 +3,9 @@ import { obtenerTokenActual, tokenVigente } from "./sesion";
 export const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 // const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
+// Ruta base de la API publicada por Backend (https://siftc.onrender.com/docs).
+export const PREFIJO_API = process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1";
+
 // HU-MO-01 CA2: cuando el token vence o el backend responde 401, se avisa a
 // App.tsx para que cierre la sesión y vuelva al login.
 let alExpirarSesion: (() => void) | null = null;
@@ -47,15 +50,16 @@ export type LoginResult =
   | { ok: true; token: string }
   | { ok: false; error: "credenciales" | "sinConexion" };
 
+// POST /api/v1/auth/login { usuario, password } -> { token, expiraEn, usuario }
 export async function login(
-  email: string,
+  usuario: string,
   password: string,
 ): Promise<LoginResult> {
   try {
-    const res = await fetch(`${BASE_URL}/api/Auth/login`, {
+    const res = await fetch(`${BASE_URL}${PREFIJO_API}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ usuario, password }),
     });
 
     if (res.status === 400 || res.status === 401) {
@@ -66,7 +70,7 @@ export async function login(
     }
 
     const data = await res.json();
-    return { ok: true, token: data.token }; // ajusta el nombre si es distinto
+    return { ok: true, token: data.token };
   } catch (e) {
     console.log("Error de red:", e, "URL:", BASE_URL);
     return { ok: false, error: "sinConexion" };

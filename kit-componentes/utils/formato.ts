@@ -17,6 +17,7 @@ export function num(valor: number, decimales = 1): string {
 
 /** Porcentaje con signo: +2,11 %  /  -1,29 %  /  0,00 % */
 export function pct(valor: number, decimales = 2): string {
+  if (!Number.isFinite(valor)) return "–"; // dato nulo en la API
   const signo = valor > 0 ? "+" : "";
   return `${signo}${num(valor, decimales)} %`;
 }

@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import {
-  ENTIDADES_MERCADO,
   EntidadMercado,
   PALETA_MERCADO,
   formatearIndice,
@@ -20,6 +19,8 @@ import {
   formatearVariacion,
 } from "../services/datosMercado";
 import { spacing } from "../theme";
+import { DataError, LoadingIndicator } from "../components";
+import { useRanking, PeriodoVista } from "../hooks/useRanking";
 
 export type DimensionTipo =
   | "IC general"
@@ -37,35 +38,36 @@ export const DIMENSIONES_DISPONIBLES: DimensionTipo[] = [
 ];
 
 interface RankingScreenProps {
-  onSeleccionarEntidad?: (entidadId: number) => void;
+  onSeleccionarEntidad?: (entidadId: string) => void;
 }
 
 type TipoModal = "sector" | "dimension" | "periodo" | null;
 
+// Frecuencias que acepta GET /ranking (diario, mensual, trimestral)
+const PERIODOS_DISPONIBLES: PeriodoVista[] = ["Diario", "Mensual", "Trimestral"];
+
 export default function RankingScreen({ onSeleccionarEntidad }: RankingScreenProps) {
-  const [refrescando, setRefrescando] = useState(false);
-
-  // Lista de sectores disponibles derivados de los datos
-  const sectoresDisponibles = useMemo(() => {
-    const sectoresUnicos = Array.from(
-      new Set(ENTIDADES_MERCADO.map((e) => e.sector)),
-    ).filter(Boolean);
-    return ["Todos los sectores", ...sectoresUnicos];
-  }, []);
-
-  // Lista de periodos disponibles derivados de los datos (más recientes primero)
-  const periodosDisponibles = useMemo(() => {
-    return Array.from(
-      new Set(ENTIDADES_MERCADO.map((e) => e.periodo)),
-    ).filter(Boolean).sort().reverse();
-  }, []);
-
-  const periodoPorDefecto = periodosDisponibles[0] ?? "2026-09";
+  const periodosDisponibles = PERIODOS_DISPONIBLES;
+  const periodoPorDefecto: PeriodoVista = "Mensual";
 
   // Estados de los filtros
   const [sectorSeleccionado, setSectorSeleccionado] = useState<string>("Todos los sectores");
   const [dimensionSeleccionada, setDimensionSeleccionada] = useState<DimensionTipo>("IC general");
-  const [periodoSeleccionado, setPeriodoSeleccionado] = useState<string>(periodoPorDefecto);
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState<PeriodoVista>(periodoPorDefecto);
+
+  // Datos del ranking: GET /ranking con los filtros (o datos de ejemplo)
+  const { entidades, sectores, cargando, refrescando, error, refrescar, ejemplo } =
+    useRanking({
+      sector: sectorSeleccionado,
+      dimension: dimensionSeleccionada,
+      periodo: periodoSeleccionado,
+    });
+
+  // Lista de sectores disponibles derivados de los datos
+  const sectoresDisponibles = useMemo(
+    () => ["Todos los sectores", ...sectores],
+    [sectores],
+  );
 
   // Control de modal selector
   const [modalAbierto, setModalAbierto] = useState<TipoModal>(null);
@@ -100,13 +102,12 @@ export default function RankingScreen({ onSeleccionarEntidad }: RankingScreenPro
 
   // Filtrado y ordenamiento simultáneo de entidades
   const entidadesFiltradas = useMemo(() => {
-    return ENTIDADES_MERCADO.filter((entidad) => {
+    // El periodo lo filtra el backend; el sector se vuelve a comprobar para los datos de ejemplo
+    return entidades.filter((entidad) => {
       const coincideSector =
         sectorSeleccionado === "Todos los sectores" ||
         entidad.sector.toLowerCase() === sectorSeleccionado.toLowerCase();
-      const coincidePeriodo =
-        !periodoSeleccionado || entidad.periodo === periodoSeleccionado;
-      return coincideSector && coincidePeriodo;
+      return coincideSector;
     }).sort((a, b) => {
       const valA = obtenerValorDimension(a, dimensionSeleccionada);
       const valB = obtenerValorDimension(b, dimensionSeleccionada);
@@ -116,25 +117,20 @@ export default function RankingScreen({ onSeleccionarEntidad }: RankingScreenPro
       return valB - valA;
     });
   }, [
+    entidades,
     sectorSeleccionado,
     dimensionSeleccionada,
-    periodoSeleccionado,
     obtenerValorDimension,
   ]);
 
+  // Deslizar hacia abajo: vuelve a consultar el ranking al backend
   const handleRefresh = useCallback(() => {
     if (refrescando) return;
-    setRefrescando(true);
-    // Simulación asíncrona local de refresco sin depender de llamadas HTTP
-    setTimeout(() => {
-      setRefrescando(false);
-    }, 600);
-  }, [refrescando]);
+    refrescar();
+  }, [refrescando, refrescar]);
 
   const handleSeleccionar = (entidad: EntidadMercado) => {
-    const id =
-      entidad.id ?? Number(String(entidad.codigo_entidad).replace(/\D/g, ""));
-    onSeleccionarEntidad?.(id);
+    onSeleccionarEntidad?.(entidad.id ?? entidad.codigo_entidad);
   };
 
   // Etiqueta para el indicador principal en la tarjeta
@@ -240,8 +236,13 @@ export default function RankingScreen({ onSeleccionarEntidad }: RankingScreenPro
         </Text>
       </View>
 
+      {cargando && entidades.length === 0 && (
+        <LoadingIndicator message="Cargando ranking..." />
+      )}
+      {error && <DataError message={error} onRetry={refrescar} />}
+
       {/* 3. LISTA TOP DE ENTIDADES O ESTADO VACÍO */}
-      {entidadesFiltradas.length === 0 ? (
+      {(cargando || error) && entidades.length === 0 ? null : entidadesFiltradas.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>No se encontraron entidades</Text>
           <Text style={styles.emptyDescription}>
@@ -418,10 +419,10 @@ export default function RankingScreen({ onSeleccionarEntidad }: RankingScreenPro
       <View style={styles.footerContainer}>
         <Text style={styles.footerText}>
           {entidadesFiltradas.length === 0
-            ? "Sin resultados para los filtros actuales · Datos de ejemplo"
+            ? `Sin resultados para los filtros actuales${ejemplo ? " · Datos de ejemplo" : ""}`
             : `Mostrando ${entidadesFiltradas.length} ${
                 entidadesFiltradas.length === 1 ? "entidad" : "entidades"
-              } · Datos de ejemplo · Clic en una entidad para ver su gráfica`}
+              }${ejemplo ? " · Datos de ejemplo" : ""} · Toca una entidad para ver su gráfica`}
         </Text>
       </View>
 

@@ -15,7 +15,7 @@ import { mensajeError } from "../utils/errores";
 export function useFicha(idInicial?: Entidad["id"]) {
   const [entidades, setEntidades] = useState<Entidad[]>([]);
   const [seleccion, setSeleccion] = useState<Entidad["id"] | undefined>(idInicial);
-  const [periodo, setPeriodo] = useState<Periodo>("1M");
+  const [periodo, setPeriodo] = useState<Periodo>("Diaria");
   const [ficha, setFicha] = useState<FichaEntidad | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export function useFicha(idInicial?: Entidad["id"]) {
         setSeleccion((actual) =>
           actual !== undefined && lista.some((e) => e.id === actual)
             ? actual
-            : [...lista].sort((a, b) => b.indice - a.indice)[0]?.id,
+            : [...lista].sort((a, b) => (b.indice || 0) - (a.indice || 0))[0]?.id,
         );
       })
       .catch((e) => {
