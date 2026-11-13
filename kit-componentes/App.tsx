@@ -68,6 +68,27 @@ export default function App() {
   const [sesionExpirada, setSesionExpirada] = useState(false);
 
   const [tab, setTab] = useState<TabKey>("tablero");
+  const [entidadSeleccionada, setEntidadSeleccionada] = useState<number | undefined>(undefined);
+
+  // Pestañas ya visitadas: cada pantalla se monta la primera vez que se abre y
+  // después se mantiene cargada (se oculta, no se destruye). Así no se vuelven
+  // a pedir los datos ni se pierden filtros o selección al cambiar de pestaña.
+  const [visitadas, setVisitadas] = useState<TabKey[]>(["tablero"]);
+
+  const cambiarTab = useCallback((nueva: TabKey) => {
+    setTab(nueva);
+    setVisitadas((actuales) =>
+      actuales.includes(nueva) ? actuales : [...actuales, nueva],
+    );
+  }, []);
+
+  const navegarAGraficas = useCallback(
+    (entidadId: number) => {
+      setEntidadSeleccionada(entidadId);
+      cambiarTab("graficas");
+    },
+    [cambiarTab],
+  );
 
   const [
     entidadSeleccionada,
