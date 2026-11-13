@@ -1,3 +1,5 @@
+/*HU-MO-02 CREACION DEL TICKER DESPLAZABLE*/
+
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -6,19 +8,12 @@ import {
   Text,
   View,
 } from "react-native";
-import {
-  ENTIDADES_MERCADO,
-  EntidadMercado,
-  PALETA_MERCADO,
-  formatearIndice,
-  formatearVariacion,
-} from "../services/datosMercado";
+import type { Entidad } from "../models";
+import { PALETA_MERCADO, formatearIndice, formatearVariacion } from "../services/datosMercado";
 
-interface Props {
-  entidades?: EntidadMercado[];
-}
+interface Props { entidades: Entidad[]; }
 
-export function TickerMercado({ entidades = ENTIDADES_MERCADO }: Props) {
+export function TickerMercado({ entidades }: Props) {
   const [contentWidth, setContentWidth] = useState(0);
   const animX = useRef(new Animated.Value(0)).current;
 
@@ -68,7 +63,7 @@ export function TickerMercado({ entidades = ENTIDADES_MERCADO }: Props) {
       }
     >
       {entidades.map((entidad, index) => {
-        const variacion = formatearVariacion(entidad.variacion_porcentual);
+        const variacion = formatearVariacion(entidad.variacionPct);
         const colorVar = variacion.esPositivo
           ? PALETA_MERCADO.positivoTextoOscuro
           : variacion.esNegativo
@@ -76,11 +71,11 @@ export function TickerMercado({ entidades = ENTIDADES_MERCADO }: Props) {
           : "#E2E8F0";
 
         return (
-          <View key={`${keyPrefix}-${entidad.codigo_entidad}`} style={styles.itemWrapper}>
+          <View key={`${keyPrefix}-${entidad.id}`} style={styles.itemWrapper}>
             <View style={styles.itemContainer}>
-              <Text style={styles.codeText}>{entidad.codigo_entidad}</Text>
+              <Text style={styles.codeText}>{entidad.codigo}</Text>
               <Text style={styles.indexText}>
-                {formatearIndice(entidad.indice_competitividad)}
+                {formatearIndice(entidad.indice)}
               </Text>
               <View style={styles.variationRow}>
                 <Text style={[styles.variationText, { color: colorVar }]}>
@@ -97,7 +92,9 @@ export function TickerMercado({ entidades = ENTIDADES_MERCADO }: Props) {
 
   return (
     <View style={styles.tickerContainer}>
-      <Animated.View
+      {entidades.length === 0 ? (
+        <Text style={styles.loadingText}>Cargando cotizaciones...</Text>
+      ) : <Animated.View
         style={[
           styles.animatedTrack,
           {
@@ -107,7 +104,7 @@ export function TickerMercado({ entidades = ENTIDADES_MERCADO }: Props) {
       >
         {renderFilaEntidades("set-1")}
         {renderFilaEntidades("set-2")}
-      </Animated.View>
+      </Animated.View>}
     </View>
   );
 }
@@ -119,6 +116,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "center",
   },
+  loadingText: { color: PALETA_MERCADO.blanco, fontFamily: "Manrope_500Medium", fontSize: 12, paddingHorizontal: 16 },
   animatedTrack: {
     flexDirection: "row",
     alignItems: "center",

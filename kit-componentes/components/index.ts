@@ -13,3 +13,4 @@ export { TopList } from "./ListaTop";
 
 export { TickerMercado } from "./TickerMercado";
 export { GraficaIndice } from "./GraficaIndice";
+export { ResumenMercado } from "./ResumenMercado";

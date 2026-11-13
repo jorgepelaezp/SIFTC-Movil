@@ -1,122 +1,238 @@
-// Capa de datos del mercado (HU-MO-02). Las pantallas solo usan estas funciones.
-//  - EXPO_PUBLIC_USAR_MOCKS=true  -> datos de ejemplo de Rafael (sin backend)
-//  - en cualquier otro caso       -> API real con el token de la sesión
-// EXPO_PUBLIC_MOCK_ESCENARIO (solo con mocks): normal | vacio | error | sinConexion
-import type { DatosMercado, Entidad, IndiceGeneral, TopMercado } from "../models";
-import { peticionAutenticada } from "./api";
-import { MOCK_ENTIDADES, MOCK_INDICE_GENERAL } from "./mocks";
+// Datos del mercado obtenidos de endpoints documentados de SIFTC,
+// con almacenamiento persistente en SQLite.
+
+import type {
+  DatosMercado,
+  Entidad,
+  TopMercado,
+} from "../models";
+
+import {
+  peticionAutenticada,
+  SesionExpiradaError,
+} from "./api";
+
+import { MOCK_ENTIDADES } from "./mocks";
+
 import {
   calcularTop,
-  completarTop,
   desdeApiEntidad,
-  desdeApiIndice,
-  desdeApiTop,
   desdeMockEntidad,
-  desdeMockIndice,
 } from "./adaptadores";
-import { ErrorApi, type ProblemDetails } from "../utils/errores";
 
-// Ruta base de la API; por confirmar con Backend (la guía propone /api/v1).
-const PREFIJO = process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1";
+import {
+  ErrorApi,
+  type ProblemDetails,
+} from "../utils/errores";
 
-export const usarMocks = () => process.env.EXPO_PUBLIC_USAR_MOCKS === "true";
-const escenario = () => process.env.EXPO_PUBLIC_MOCK_ESCENARIO ?? "normal";
+import {
+  guardarCache,
+  leerCache,
+} from "./offline";
 
-/* ------------------------------ API real ------------------------------ */
+const PREFIJO =
+  process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1";
 
-async function pedir<T>(ruta: string): Promise<T> {
-  const res = await peticionAutenticada(`${PREFIJO}${ruta}`);
-  if (!res.ok) {
-    let problema: ProblemDetails | undefined;
-    try {
-      problema = await res.json();
-    } catch {
-      // la respuesta de error no es JSON
-    }
-    throw new ErrorApi(res.status, problema);
-  }
-  return (await res.json()) as T;
+export const usarMocks = () =>
+  process.env.EXPO_PUBLIC_USAR_MOCKS === "true";
+
+const escenario = () =>
+  process.env.EXPO_PUBLIC_MOCK_ESCENARIO ?? "normal";
+
+function rutaCompleta(ruta: string): string {
+  return `${PREFIJO}${
+    ruta.startsWith("/") ? ruta : `/${ruta}`
+  }`;
 }
 
-/* ------------------------------- Mocks -------------------------------- */
+/**
+ * Realiza una petición autenticada.
+ *
+ * Para GET:
+ * 1. Intenta consultar el Backend.
+ * 2. Guarda la respuesta en SQLite.
+ * 3. Si no hay conexión, recupera los datos guardados.
+ *
+ * Para otros métodos, realiza la petición directamente.
+ */
+export async function pedir<T>(
+  ruta: string,
+  opciones: RequestInit = {}
+): Promise<T> {
+  const metodo = (
+    opciones.method ?? "GET"
+  ).toUpperCase();
 
-// "corte" simula que el mercado cambia entre actualizaciones. El corte 0 son
-// exactamente los valores de Rafael; los siguientes los mueven un poco.
-let corte = 0;
-let cargas = 0;
+  const clave = rutaCompleta(ruta);
 
-const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const redondear = (v: number, d: number) => Math.round(v * 10 ** d) / 10 ** d;
-const azar = (semilla: number) => {
-  const x = Math.sin(semilla * 12.9898) * 43758.5453;
-  return x - Math.floor(x);
-};
+  if (metodo !== "GET") {
+    const res = await peticionAutenticada(
+      clave,
+      opciones
+    );
 
-async function simularRed(): Promise<void> {
-  await esperar(700);
-  if (escenario() === "sinConexion") throw new TypeError("Network request failed");
+    if (!res.ok) {
+      let problema: ProblemDetails | undefined;
+
+      try {
+        problema = await res.json();
+      } catch {
+        // La respuesta no contiene JSON.
+      }
+
+      throw new ErrorApi(res.status, problema);
+    }
+
+    if (res.status === 204) {
+      return undefined as T;
+    }
+
+    return (await res.json()) as T;
+  }
+
+  try {
+    const res = await peticionAutenticada(
+      clave,
+      opciones
+    );
+
+    if (!res.ok) {
+      let problema: ProblemDetails | undefined;
+
+      try {
+        problema = await res.json();
+      } catch {
+        // La respuesta no contiene JSON.
+      }
+
+      // No se deben ocultar errores de autenticación,
+      // permisos o validación utilizando datos antiguos.
+      if (res.status < 500) {
+        throw new ErrorApi(res.status, problema);
+      }
+
+      const cache = await leerCache<T>(clave).catch(
+        () => null
+      );
+
+      if (cache) {
+        return cache.data;
+      }
+
+      throw new ErrorApi(res.status, problema);
+    }
+
+    const datos = (await res.json()) as T;
+
+    // Un fallo al guardar la caché no debe impedir
+    // mostrar una respuesta obtenida correctamente.
+    await guardarCache(clave, datos).catch((error) =>
+      console.warn(
+        "No se pudo actualizar la caché SQLite:",
+        error
+      )
+    );
+
+    return datos;
+  } catch (error) {
+    if (
+      error instanceof SesionExpiradaError ||
+      error instanceof ErrorApi
+    ) {
+      throw error;
+    }
+
+    const cache = await leerCache<T>(clave).catch(
+      () => null
+    );
+
+    if (cache) {
+      return cache.data;
+    }
+
+    throw new Error(
+      "Sin conexión y no hay datos guardados para esta consulta. Conéctate a Internet y vuelve a intentarlo."
+    );
+  }
+}
+
+export async function simularRed(): Promise<void> {
+  await new Promise((resolve) =>
+    setTimeout(resolve, 500)
+  );
+
+  if (escenario() === "sinConexion") {
+    throw new TypeError("Network request failed");
+  }
+
   if (escenario() === "error") {
     throw new ErrorApi(500, {
-      title: "Internal Server Error",
+      title: "Error de prueba",
       status: 500,
-      detail: "Error de prueba simulado por el mock.",
     });
   }
 }
 
-function entidadesMock(): Entidad[] {
-  if (escenario() === "vacio") return [];
-  return MOCK_ENTIDADES.map(desdeMockEntidad).map((e) =>
-    corte === 0
-      ? e
-      : {
-          ...e,
-          indice: redondear(e.indice + (azar(corte * 100 + e.id) - 0.5) * 0.6, 1),
-          variacionPct: redondear(e.variacionPct + (azar(corte * 100 + e.id + 50) - 0.5) * 0.3, 2),
-        },
-  );
-}
-
-/* --------------------------- Funciones públicas --------------------------- */
-
 export async function getEntidades(): Promise<Entidad[]> {
   if (usarMocks()) {
     await simularRed();
-    return entidadesMock();
+
+    if (escenario() === "vacio") {
+      return [];
+    }
+
+    return MOCK_ENTIDADES.map(desdeMockEntidad);
   }
-  const datos = await pedir<any[]>("/entidades");
-  return datos.map(desdeApiEntidad);
+
+  const todos: any[] = [];
+
+  for (let page = 1; page <= 50; page++) {
+    let lote: any[];
+
+    try {
+      lote = await pedir<any[]>(
+        `/entidades?page=${page}&size=100&sort=ic&dir=desc`
+      );
+    } catch (error) {
+      if (todos.length > 0) {
+        break;
+      }
+
+      throw error;
+    }
+
+    if (!Array.isArray(lote) || lote.length === 0) {
+      break;
+    }
+
+    todos.push(...lote);
+
+    if (lote.length < 100) {
+      break;
+    }
+  }
+
+  return todos.map(desdeApiEntidad);
 }
 
-export async function getTop(limite = 5): Promise<TopMercado> {
-  if (usarMocks()) {
-    await simularRed();
-    return calcularTop(entidadesMock(), MOCK_INDICE_GENERAL.fecha, limite);
-  }
-  return desdeApiTop(await pedir<any>(`/mercado/top?limite=${limite}`));
+export async function getTop(
+  limite = 5
+): Promise<TopMercado> {
+  const entidades = await getEntidades();
+
+  return calcularTop(
+    entidades,
+    new Date().toISOString().slice(0, 10),
+    limite
+  );
 }
 
-export async function getIndice(): Promise<IndiceGeneral> {
-  if (usarMocks()) {
-    await simularRed();
-    const base = desdeMockIndice(MOCK_INDICE_GENERAL);
-    if (corte === 0) return base;
-    const valor = redondear(base.valor + (azar(corte * 7) - 0.5) * 0.8, 1);
-    const variacion = redondear(valor - base.valor + base.variacion, 1);
-    return {
-      ...base,
-      valor,
-      cierre: valor,
-      variacion,
-      variacionPct: redondear((variacion / (valor - variacion)) * 100, 2),
-    };
-  }
-  return desdeApiIndice(await pedir<any>("/indice-general"));
-}
-
-/** Carga todo lo que necesita el tablero; se usa al abrir y al deslizar para actualizar. */
 export async function cargarMercado(): Promise<DatosMercado> {
-  if (usarMocks()) corte = cargas++;
-  const [entidades, top, indice] = await Promise.all([getEntidades(), getTop(), getIndice()]);
-  return { entidades, top: completarTop(top, entidades), indice, ejemplo: usarMocks() };
+  const entidades = await getEntidades();
+
+  return {
+    entidades,
+    top: calcularTop(entidades, "", 5),
+    ejemplo: usarMocks(),
+  };
 }
