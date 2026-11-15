@@ -3,7 +3,7 @@
 // Los mocks solo se usan si EXPO_PUBLIC_USAR_MOCKS=true.
 import type { Entidad, FichaEntidad, Periodo, PuntoSerie } from "../models";
 import { pedir, simularRed, usarMocks } from "./mercado";
-import { desdeApiPunto, posicionPorIndice } from "./adaptadores";
+import { desdeApiPunto, desdeApiEntidad, posicionPorIndice } from "./adaptadores";
 import { MOCK_INDICE_GENERAL } from "./mocks";
 
 export const PERIODOS: { clave: Periodo; etiqueta: string; dias: number }[] = [
@@ -77,15 +77,27 @@ export async function getSerie(entidad: Entidad, periodo: Periodo): Promise<Punt
   return (respuesta?.serie ?? []).map(desdeApiPunto);
 }
 
+/** Información puntual del endpoint de detalle, reutilizando la caché offline de pedir(). */
+export async function getEntidadPorId(entidad: Entidad): Promise<Entidad> {
+  if (usarMocks()) return entidad;
+  const respuesta = await pedir<any>(`/entidades/${encodeURIComponent(String(entidad.id))}`);
+  return desdeApiEntidad(respuesta);
+}
+
 /** Todo lo que necesita la ficha; se usa al elegir entidad o periodo. */
 export async function cargarFicha(
   entidad: Entidad,
   entidades: Entidad[],
   periodo: Periodo,
 ): Promise<FichaEntidad> {
-  const serie = await getSerie(entidad, periodo);
+  // Cada cambio de entidad o periodo obtiene también sus datos puntuales.
+  // pedir() utiliza la caché SQLite cuando el servidor no está disponible.
+  const [detalle, serie] = await Promise.all([
+    getEntidadPorId(entidad),
+    getSerie(entidad, periodo),
+  ]);
   return {
-    entidad,
+    entidad: detalle,
     ranking: posicionPorIndice(entidades, entidad.id),
     periodo,
     serie,

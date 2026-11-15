@@ -28,6 +28,7 @@ import LoginScreen from "./screens/InciarSesion";
 import HomeScreen from "./screens/TableroScreen";
 import ChartsScreen from "./screens/GraficasScreen";
 import RankingScreen from "./screens/RankingScreen";
+import WatchlistScreen from "./screens/WatchlistScreen";
 
 import { LoadingIndicator } from "./components";
 
@@ -321,6 +322,12 @@ export default function App() {
               }
             >
               <ChartsScreen entidadId={entidadSeleccionada} />
+            </View>
+          )}
+
+          {visitadas.includes("watchlist") && (
+            <View style={tab === "watchlist" ? styles.visible : styles.oculta}>
+              <WatchlistScreen onSeleccionarEntidad={navegarAGraficas} />
             </View>
           )}
 
