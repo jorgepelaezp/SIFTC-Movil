@@ -3,13 +3,12 @@ import {
   DataError,
   DaySummary,
   EmptyState,
-  IndexCard,
+  ResumenMercado,
   LoadingIndicator,
   TopList,
 } from "../components";
 import { useMercado } from "../hooks/useMercado";
 import { colors, spacing } from "../theme";
-import { fechaIso } from "../utils/formato";
 
 export default function HomeScreen() {
   const { datos, cargando, refrescando, error, refrescar } = useMercado();
@@ -28,9 +27,7 @@ export default function HomeScreen() {
         />
       }>
       <Text style={styles.title}>Tablero de mercado</Text>
-      {datos && (
-        <Text style={styles.subtitle}>Cierre del {fechaIso(datos.indice.fecha)}</Text>
-      )}
+      {datos && <Text style={styles.subtitle}>Información consultada directamente al backend</Text>}
 
       {cargando && !datos && <LoadingIndicator message="Cargando mercado..." />}
 
@@ -41,7 +38,7 @@ export default function HomeScreen() {
 
       {datos && !vacio && (
         <>
-          <IndexCard indice={datos.indice} ejemplo={datos.ejemplo} />
+          <ResumenMercado total={datos.entidades.length} ejemplo={datos.ejemplo} />
           <DaySummary
             entidades={datos.entidades}
             mayorSubida={datos.top.ganadores[0]}

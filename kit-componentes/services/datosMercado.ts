@@ -273,7 +273,7 @@ export function obtenerTop10Ranking(
  * Formatea número con coma decimal al estilo colombiano es-CO
  */
 export function formatearNumeroCO(valor: number, decimales = 1): string {
-  if (valor === undefined || valor === null || isNaN(valor)) return "0,0";
+  if (valor === undefined || valor === null || !Number.isFinite(valor)) return "–";
   const fijo = valor.toFixed(decimales);
   const partes = fijo.split(".");
   return `${partes[0]},${partes[1]}`;
@@ -297,6 +297,9 @@ export function formatearVariacion(valor: number): {
   esPositivo: boolean;
   esNegativo: boolean;
 } {
+  if (!Number.isFinite(valor)) {
+    return { texto: "–", signo: "", icono: "–", esPositivo: false, esNegativo: false };
+  }
   const esPositivo = valor > 0;
   const esNegativo = valor < 0;
   const signo = esPositivo ? "+" : esNegativo ? "-" : "";

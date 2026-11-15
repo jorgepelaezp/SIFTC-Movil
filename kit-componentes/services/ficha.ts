@@ -1,18 +1,15 @@
-// Datos de la ficha de entidad (HU-MO-04). La pantalla solo usa estas funciones.
-//  - EXPO_PUBLIC_USAR_MOCKS=true -> velas de ejemplo generadas a partir de los
-//    mocks de Rafael: terminan en el IC y la variación de cada entidad.
-//  - en cualquier otro caso      -> API real. La ruta es la de la guía de
-//    endpoints; Backend aún no la publica ni decide entre
-//    /entidades/{id}/ohlc y /series/{id} (docs/REVISION_BACKEND_SPRINT2.md).
+// Datos de la ficha de entidad. En modo real consume exclusivamente
+// GET /api/v1/entidades/{id}/ohlc, documentado en v1.json.
+// Los mocks solo se usan si EXPO_PUBLIC_USAR_MOCKS=true.
 import type { Entidad, FichaEntidad, Periodo, PuntoSerie } from "../models";
 import { pedir, simularRed, usarMocks } from "./mercado";
 import { desdeApiPunto, posicionPorIndice } from "./adaptadores";
 import { MOCK_INDICE_GENERAL } from "./mocks";
 
 export const PERIODOS: { clave: Periodo; etiqueta: string; dias: number }[] = [
-  { clave: "1S", etiqueta: "1 sem", dias: 7 },
-  { clave: "1M", etiqueta: "1 mes", dias: 30 },
-  { clave: "3M", etiqueta: "3 meses", dias: 90 },
+  { clave: "1S", etiqueta: "Diaria", dias: 7 },
+  { clave: "1M", etiqueta: "Mensual", dias: 30 },
+  { clave: "3M", etiqueta: "Trimestral", dias: 90 },
 ];
 
 const diasDe = (periodo: Periodo) =>
@@ -74,8 +71,10 @@ export async function getSerie(entidad: Entidad, periodo: Periodo): Promise<Punt
     await simularRed();
     return serieMock(entidad).slice(-diasDe(periodo));
   }
-  const datos = await pedir<any[]>(`/entidades/${entidad.id}/ohlc?periodo=${periodo}`);
-  return datos.map(desdeApiPunto);
+  // Correspondencia con los valores permitidos por el contrato OpenAPI.
+  const periodoApi = periodo === "1S" ? "Diaria" : periodo === "1M" ? "Mensual" : "Trimestral";
+  const respuesta = await pedir<any>(`/entidades/${encodeURIComponent(String(entidad.id))}/ohlc?periodo=${periodoApi}`);
+  return (respuesta?.serie ?? []).map(desdeApiPunto);
 }
 
 /** Todo lo que necesita la ficha; se usa al elegir entidad o periodo. */

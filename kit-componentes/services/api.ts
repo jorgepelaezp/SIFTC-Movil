@@ -1,10 +1,8 @@
 import { obtenerTokenActual, tokenVigente } from "./sesion";
 
-export const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-// const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+export const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://siftc.onrender.com").replace(/\/+$/, "");
+const API_PREFIX = process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1";
 
-// HU-MO-01 CA2: cuando el token vence o el backend responde 401, se avisa a
-// App.tsx para que cierre la sesión y vuelva al login.
 let alExpirarSesion: (() => void) | null = null;
 
 export function configurarSesionExpirada(manejador: (() => void) | null) {
@@ -13,15 +11,11 @@ export function configurarSesionExpirada(manejador: (() => void) | null) {
 
 export class SesionExpiradaError extends Error {
   constructor() {
-    super("La sesión expiró");
+    super("La sesión expiró. Inicia sesión nuevamente.");
+    this.name = "SesionExpiradaError";
   }
 }
 
-/**
- * Petición a un endpoint protegido: envía el token en la cabecera
- * Authorization. Si no hay token vigente o el backend responde 401, cierra la
- * sesión y lanza SesionExpiradaError.
- */
 export async function peticionAutenticada(
   ruta: string,
   opciones: RequestInit = {},
@@ -34,7 +28,14 @@ export async function peticionAutenticada(
 
   const headers = new Headers(opciones.headers);
   headers.set("Authorization", `Bearer ${token}`);
-  const res = await fetch(`${BASE_URL}${ruta}`, { ...opciones, headers });
+  if (opciones.body && !(opciones.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const res = await fetch(`${BASE_URL}${ruta.startsWith("/") ? ruta : `/${ruta}`}`, {
+    ...opciones,
+    headers,
+  });
 
   if (res.status === 401) {
     alExpirarSesion?.();
@@ -44,31 +45,34 @@ export async function peticionAutenticada(
 }
 
 export type LoginResult =
-  | { ok: true; token: string }
+  | { ok: true; token: string; usuario?: { id: string; nombre: string; rol: string }; expiraEn?: number }
   | { ok: false; error: "credenciales" | "sinConexion" };
 
-export async function login(
-  email: string,
-  password: string,
-): Promise<LoginResult> {
+export async function login(usuario: string, password: string): Promise<LoginResult> {
   try {
-    const res = await fetch(`${BASE_URL}/api/Auth/login`, {
+    const res = await fetch(`${BASE_URL}${API_PREFIX}/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      // El contrato OpenAPI define "usuario", no "email".
+      body: JSON.stringify({ usuario, password }),
     });
 
     if (res.status === 400 || res.status === 401) {
       return { ok: false, error: "credenciales" };
     }
     if (!res.ok) {
-      return { ok: false, error: "sinConexion" }; // 5xx: el servidor no responde bien
+      console.warn("Login API:", res.status, await res.text().catch(() => ""));
+      return { ok: false, error: "sinConexion" };
     }
 
     const data = await res.json();
-    return { ok: true, token: data.token }; // ajusta el nombre si es distinto
+    if (!data?.token || typeof data.token !== "string") {
+      console.warn("La respuesta de login no contiene un token JWT.");
+      return { ok: false, error: "sinConexion" };
+    }
+    return { ok: true, token: data.token, usuario: data.usuario, expiraEn: data.expiraEn };
   } catch (e) {
-    console.log("Error de red:", e, "URL:", BASE_URL);
+    console.log("Error de red al iniciar sesión:", e, "URL:", BASE_URL);
     return { ok: false, error: "sinConexion" };
   }
 }

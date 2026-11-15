@@ -1,10 +1,20 @@
+import { useEffect, useState } from "react";
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { colors, spacing } from "../theme";
 import { TickerMercado } from "./TickerMercado";
+import type { Entidad } from "../models";
+import { getEntidades } from "../services/mercado";
 
 type Props = { onAvatarPress: () => void };
 
 export function AppHeader({ onAvatarPress }: Props) {
+  const [entidades, setEntidades] = useState<Entidad[]>([]);
+  useEffect(() => {
+    let activo = true;
+    getEntidades().then((datos) => { if (activo) setEntidades(datos); }).catch(() => { if (activo) setEntidades([]); });
+    return () => { activo = false; };
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.row}>
@@ -19,7 +29,7 @@ export function AppHeader({ onAvatarPress }: Props) {
       </View>
       {/* Ticker horizontal animado continuo (HU-MO-02) */}
       <View style={styles.tickerContainer}>
-        <TickerMercado />
+        <TickerMercado entidades={entidades} />
       </View>
     </View>
   );
@@ -54,4 +64,4 @@ const styles = StyleSheet.create({
   tickerContainer: {
     width: "100%",
   },
-});
+});
