@@ -1,8 +1,15 @@
-import { registerRootComponent } from 'expo';
+import { createElement } from "react";
+import { registerRootComponent } from "expo";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import App from './App';
+import App from "./App";
+import { ProveedorTema } from "./theme/TemaContext";
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
-registerRootComponent(App);
+// Envuelve la app con el tema (claro/oscuro) y la zona segura de la pantalla.
+function Raiz() {
+  return createElement(SafeAreaProvider, {
+    children: createElement(ProveedorTema, { children: createElement(App) }),
+  });
+}
+
+registerRootComponent(Raiz);
