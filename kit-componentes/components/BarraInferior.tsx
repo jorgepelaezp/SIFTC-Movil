@@ -3,12 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../theme";
 
-export type TabKey = "tablero" | "graficas" | "ranking";
+export type TabKey = "tablero" | "graficas" | "ranking" | "watchlist";
 
 const TABS: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: "tablero", label: "Tablero", icon: "bar-chart" },
   { key: "graficas", label: "Gráficas", icon: "stats-chart" },
   { key: "ranking", label: "Ranking", icon: "trophy-outline" },
+  { key: "watchlist", label: "Watchlist", icon: "star-outline" },
 ];
 
 type Props = { active: TabKey; onChange: (tab: TabKey) => void };

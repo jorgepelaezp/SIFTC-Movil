@@ -15,6 +15,9 @@ import {
 import {
   actualizarCacheWatchlist,
   encolarMutacion,
+  leerCache,
+  guardarCache,
+  obtenerMutacionesPendientes,
 } from "./offline";
 
 import {
@@ -298,20 +301,61 @@ export async function getRankingMovil(
   }));
 }
 
+const PREFIJO = process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1";
+const CLAVE_WATCHLIST = `${PREFIJO}/watchlist`;
+
+/**
+ * La caché tiene la forma del DTO remoto; las operaciones pendientes se aplican
+ * encima de la respuesta de la API para no perder cambios hechos sin conexión.
+ */
 export async function getWatchlist(): Promise<Entidad[]> {
-  if (usarMocks()) {
-    return [];
+  if (usarMocks()) return [];
+
+  const pendientes = (await obtenerMutacionesPendientes()).filter(
+    (m) => m.path.startsWith(`${CLAVE_WATCHLIST}/`)
+  );
+
+  const cache = await leerCache<any[]>(CLAVE_WATCHLIST);
+  let datos: any[];
+
+  try {
+    const res = await peticionAutenticada(CLAVE_WATCHLIST);
+    if (!res.ok) {
+      let problema: ProblemDetails | undefined;
+      try { problema = await res.json(); } catch {}
+      if (res.status < 500) throw new ErrorApi(res.status, problema);
+      if (!cache) throw new ErrorApi(res.status, problema);
+      datos = cache.data;
+    } else {
+      datos = await res.json();
+      if (!Array.isArray(datos)) throw new Error("Respuesta inválida de Watchlist");
+    }
+  } catch (error) {
+    if (error instanceof SesionExpiradaError || error instanceof ErrorApi) throw error;
+    if (!cache) throw new Error("Sin conexión y sin Watchlist guardada. Conéctate para cargarla por primera vez.");
+    datos = cache.data;
   }
 
-  const datos = await pedir<any[]>("/watchlist");
+  const porId = new Map<string, any>();
+  for (const item of datos) porId.set(String(item.id), item);
 
-  return datos.map(desdeApiEntidad);
+  // Aplicar las mutaciones en el orden en que se hicieron.
+  const catalogo = await leerCache<any[]>(`${PREFIJO}/entidades?page=1&size=100&sort=ic&dir=desc`).catch(() => null);
+  for (const op of pendientes) {
+    const id = decodeURIComponent(op.path.slice(`${CLAVE_WATCHLIST}/`.length));
+    if (op.method === "DELETE") {
+      porId.delete(id);
+    } else if (!porId.has(id)) {
+      const anterior = cache?.data.find((e) => String(e.id) === id);
+      const conocida = catalogo?.data.find((e) => String(e.id) === id);
+      if (anterior || conocida) porId.set(id, anterior ?? conocida);
+    }
+  }
+
+  const resultado = [...porId.values()];
+  await guardarCache(CLAVE_WATCHLIST, resultado).catch(() => undefined);
+  return resultado.map(desdeApiEntidad);
 }
-
-const PREFIJO =
-  process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1";
-
-const CLAVE_WATCHLIST = `${PREFIJO}/watchlist`;
 
 async function mutarWatchlist(
   id: string | number,

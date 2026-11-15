@@ -30,14 +30,8 @@ export async function sincronizarPendientes(): Promise<number> {
         );
 
         if (!respuesta.ok) {
-          if (
-            respuesta.status >= 400 &&
-            respuesta.status < 500
-          ) {
-            await eliminarMutacionPendiente(operacion.id);
-            continue;
-          }
-
+          // No descartar cambios por 401/403/404: deben permanecer
+          // pendientes para que el usuario pueda corregir el problema.
           break;
         }
 

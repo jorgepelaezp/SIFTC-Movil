@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import {
   DataError,
   EmptyState,
@@ -13,6 +13,8 @@ import { PERIODOS, resumenPeriodo } from "../services/ficha";
 import { PALETA_MERCADO } from "../services/datosMercado";
 import { spacing } from "../theme";
 import { fechaIso, num } from "../utils/formato";
+import { exportarSerieCsv } from "../services/exportacion";
+import { comprobarServidor, type DiagnosticoServidor } from "../services/diagnostico";
 
 type Props = {
   /** Entidad a mostrar al llegar desde otra pantalla (tocar una entidad). */
@@ -40,6 +42,26 @@ export default function ChartsScreen({ entidadId }: Props) {
   }, [entidadId, seleccionar]);
 
   const [tipo, setTipo] = useState<TipoGrafica>("velas");
+  const [exportando, setExportando] = useState(false);
+  const [comprobando, setComprobando] = useState(false);
+  const [diagnostico, setDiagnostico] = useState<DiagnosticoServidor | null>(null);
+  const exportar = async () => {
+    if (!ficha || exportando) return;
+    setExportando(true);
+    try {
+      await exportarSerieCsv(ficha.entidad.id, periodo);
+    } catch (error) {
+      Alert.alert("Exportación CSV", error instanceof Error ? error.message : "No se pudo exportar la serie.");
+    } finally {
+      setExportando(false);
+    }
+  };
+  const revisarServidor = async () => {
+    if (comprobando) return;
+    setComprobando(true);
+    try { setDiagnostico(await comprobarServidor()); }
+    finally { setComprobando(false); }
+  };
   const [inspeccionando, setInspeccionando] = useState(false);
   const resumen = ficha ? resumenPeriodo(ficha.serie) : null;
   const sinEntidades = !cargando && !error && entidades.length === 0;
@@ -57,6 +79,19 @@ export default function ChartsScreen({ entidadId }: Props) {
         <Text style={styles.title}>Ficha de entidad</Text>
         <Text style={styles.subtitle}>
           Índice, variación y evolución de la entidad en el periodo elegido.
+        </Text>
+      </View>
+
+      {/* Diagnóstico público del servidor; no requiere sesión. */}
+      <View style={styles.diagnosticoFila}>
+        <Pressable onPress={() => void revisarServidor()} disabled={comprobando}
+          accessibilityRole="button" style={styles.accionSecundaria}>
+          <Text style={styles.accionTexto}>{comprobando ? "Comprobando..." : "Comprobar servidor"}</Text>
+        </Pressable>
+        <Text style={styles.estadoConexion}>
+          {diagnostico === "disponible" ? "Servidor disponible" :
+           diagnostico === "no-disponible" ? "Servidor respondió con error" :
+           diagnostico === "sin-conexion" ? "No se pudo conectar al servidor" : ""}
         </Text>
       </View>
 
@@ -129,6 +164,18 @@ export default function ChartsScreen({ entidadId }: Props) {
               </View>
             )}
           </View>
+
+          {/* CSV oficial del periodo visible, a través del endpoint de exportación. */}
+          {!ficha.ejemplo && (
+            <Pressable onPress={() => void exportar()} disabled={exportando}
+              accessibilityRole="button" accessibilityLabel="Exportar serie en CSV"
+              style={[styles.accionPrincipal, exportando && { opacity: 0.6 }]}>
+              {exportando && <ActivityIndicator color="#FFFFFF" size="small" />}
+              <Text style={styles.accionPrincipalTexto}>
+                {exportando ? "Exportando CSV..." : "Exportar serie CSV"}
+              </Text>
+            </Pressable>
+          )}
 
           {/* Velas / Línea y periodo */}
           <View style={styles.controles}>
@@ -232,6 +279,12 @@ function Segmento({ opciones, valor, onCambio }: SegmentoProps) {
 }
 
 const styles = StyleSheet.create({
+  diagnosticoFila: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
+  accionSecundaria: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 9, backgroundColor: "#E7EDF4" },
+  accionTexto: { fontSize: 12, fontWeight: "700", color: "#173B65" },
+  estadoConexion: { fontSize: 11, color: "#64748B", flexShrink: 1 },
+  accionPrincipal: { backgroundColor: "#173B65", borderRadius: 10, padding: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  accionPrincipalTexto: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
   screen: { flex: 1, backgroundColor: PALETA_MERCADO.fondoClaro },
   content: {
     padding: spacing.lg,
