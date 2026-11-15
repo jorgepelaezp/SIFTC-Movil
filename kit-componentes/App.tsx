@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AppState,
   View,
@@ -19,7 +19,8 @@ import {
   Manrope_800ExtraBold,
 } from "@expo-google-fonts/manrope";
 
-import { colors } from "./theme";
+import { useTema } from "./theme/TemaContext";
+import { Paleta } from "./theme/paletas";
 import { AppHeader } from "./components/EncabezadoApp";
 import { BottomTabBar, TabKey } from "./components/BarraInferior";
 
@@ -56,6 +57,10 @@ import {
 const REVISION_MS = 30_000;
 
 export default function App() {
+  // Colores según el tema (claro u oscuro).
+  const { colores: colors, esOscuro } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
+
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
     Manrope_500Medium,
@@ -262,7 +267,7 @@ export default function App() {
   // Con sesión: cabecera, pantallas y barra inferior.
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
+      <StatusBar style={esOscuro ? "light" : "dark"} />
 
       <SafeAreaView style={styles.screen} edges={["top"]}>
         <AppHeader onAvatarPress={() => cerrarSesion(false)} />
@@ -350,57 +355,58 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
 
-  body: {
-    flex: 1,
-  },
+    body: {
+      flex: 1,
+    },
 
-  visible: {
-    flex: 1,
-  },
+    visible: {
+      flex: 1,
+    },
 
-  oculta: {
-    display: "none",
-  },
+    oculta: {
+      display: "none",
+    },
 
-  offlineBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    backgroundColor: "#FFF7E6",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F2D9A6",
-  },
+    offlineBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 9,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      backgroundColor: "#FFF7E6",
+      borderBottomWidth: 1,
+      borderBottomColor: "#F2D9A6",
+    },
 
-  offlineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#C58A19",
-  },
+    offlineDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#C58A19",
+    },
 
-  offlineTitle: {
-    color: "#76520D",
-    fontSize: 12,
-    fontWeight: "700",
-  },
+    offlineTitle: {
+      color: "#76520D",
+      fontSize: 12,
+      fontWeight: "700",
+    },
 
-  offlineText: {
-    color: "#76520D",
-    fontSize: 10,
-    marginTop: 2,
-  },
+    offlineText: {
+      color: "#76520D",
+      fontSize: 10,
+      marginTop: 2,
+    },
 
-  centrado: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: colors.background,
-  },
-});
+    centrado: {
+      flex: 1,
+      justifyContent: "center",
+      backgroundColor: colors.background,
+    },
+  });

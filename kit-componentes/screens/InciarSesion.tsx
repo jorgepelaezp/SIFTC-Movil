@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,12 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Button,
   TextField,
@@ -16,8 +19,30 @@ import {
   ErrorMessage,
   ErrorType,
 } from "../components";
-import { colors, spacing, radius, fontSize } from "../theme";
+import { spacing, radius, fontSize } from "../theme";
+import { useTema } from "../theme/TemaContext";
+import { Paleta } from "../theme/paletas";
 import { login } from "../services/api";
+
+// Logos sin fondo: uno para modo claro y otro para modo oscuro.
+const LOGO_CLARO = require("../assets/alza-logo-claro.png");
+const LOGO_OSCURO = require("../assets/alza-logo-oscuro.png");
+
+// Cambiar a true SOLO cuando backend confirme que el login acepta correo.
+// Con true, los textos quedan iguales a los del portal web.
+const ACEPTA_CORREO = false;
+
+const TEXTOS = ACEPTA_CORREO
+  ? {
+      subtitulo: "Ingresa con tu correo o usuario del sistema.",
+      etiquetaUsuario: "Usuario o correo",
+      ejemploUsuario: "ej: analista@siftc.edu.co o analista",
+    }
+  : {
+      subtitulo: "Ingresa con tu usuario y contraseña del sistema.",
+      etiquetaUsuario: "Usuario",
+      ejemploUsuario: "Escribe tu usuario",
+    };
 
 const FEATURES = [
   "Índice de Competitividad de 0 a 100 para cada entidad.",
@@ -31,6 +56,10 @@ type Props = {
 };
 
 export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
+  const { colores, esOscuro, alternarTema } = useTema();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
+
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [error, setError] = useState<ErrorType | null>(
@@ -56,6 +85,10 @@ export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
       style={styles.screen}
       behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <StatusBar style="light" />
+
+      {/* Franja fija detrás de la hora y la batería: evita que el texto se monte al hacer scroll */}
+      <View style={[styles.barraEstado, { height: insets.top }]} />
+
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -75,21 +108,32 @@ export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
         </View>
 
         <View style={styles.sheet}>
+          <Pressable
+            onPress={alternarTema}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={esOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            style={({ pressed }) => [styles.botonTema, pressed && styles.botonTemaPresionado]}>
+            <Ionicons
+              name={esOscuro ? "sunny-outline" : "moon-outline"}
+              size={20}
+              color={colores.text}
+            />
+          </Pressable>
+
           <Image
-            source={require("../assets/logo.png")}
+            source={esOscuro ? LOGO_OSCURO : LOGO_CLARO}
             style={styles.logo}
             resizeMode="contain"
           />
           <Text style={styles.title}>Iniciar sesión</Text>
-          <Text style={styles.subtitle}>
-            Ingresa con tu usuario y contraseña del sistema.
-          </Text>
+          <Text style={styles.subtitle}>{TEXTOS.subtitulo}</Text>
 
           {error && <ErrorMessage type={error} />}
 
           <TextField
-            label="Usuario"
-            placeholder="Escribe tu usuario"
+            label={TEXTOS.etiquetaUsuario}
+            placeholder={TEXTOS.ejemploUsuario}
             value={user}
             onChangeText={setUser}
             error={error === "credenciales"}
@@ -114,6 +158,10 @@ export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
 
           <View style={styles.footerLine} />
           <Text style={styles.footer}>
+            Acceso solo para personal autorizado. Si no tienes cuenta, pídela al
+            administrador.
+          </Text>
+          <Text style={styles.footerSistema}>
             Sistema de Información Financiera de Trazabilidad y Competitividad
           </Text>
         </View>
@@ -122,90 +170,117 @@ export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.navy },
-  scroll: { flexGrow: 1 },
-  hero: {
-    backgroundColor: colors.navy,
-    paddingHorizontal: spacing.xl,
-    paddingTop: 64,
-    paddingBottom: 56,
-  },
-  kicker: {
-    color: colors.accent,
-    fontFamily: "Manrope_600SemiBold",
-    fontSize: fontSize.sm,
-    letterSpacing: 2,
-    marginBottom: spacing.lg,
-  },
-  headline: {
-    color: colors.white,
-    fontFamily: "Manrope_800ExtraBold",
-    fontSize: fontSize.xxl,
-    lineHeight: 36,
-    letterSpacing: -0.6,
-    marginBottom: spacing.xl,
-  },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.lg,
-  },
-  featureNum: {
-    color: colors.accent,
-    fontFamily: "Manrope_700Bold",
-    fontSize: fontSize.xl,
-    width: 36,
-  },
-  featureDivider: {
-    width: 1,
-    alignSelf: "stretch",
-    backgroundColor: "rgba(255,255,255,0.25)",
-    marginHorizontal: spacing.lg,
-  },
-  featureText: {
-    flex: 1,
-    color: "#E5E9F2",
-    fontFamily: "Manrope_500Medium",
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  sheet: {
-    flex: 1,
-    backgroundColor: colors.white,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    marginTop: -32,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: 32,
-  },
-  logo: { width: 200, height: 170, alignSelf: "center" },
-  title: {
-    fontFamily: "Manrope_800ExtraBold",
-    fontSize: 26,
-    color: colors.text,
-    textAlign: "center",
-    marginTop: spacing.sm,
-  },
-  subtitle: {
-    fontFamily: "Manrope_400Regular",
-    fontSize: fontSize.lg,
-    color: colors.textLight,
-    textAlign: "center",
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
-  },
-  footerLine: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginTop: spacing.xl,
-  },
-  footer: {
-    fontFamily: "Manrope_400Regular",
-    color: colors.textLight,
-    fontSize: fontSize.sm,
-    textAlign: "center",
-    marginTop: spacing.lg,
-  },
-});
+// Los estilos se calculan según el tema (claro u oscuro).
+// En modo claro los valores son los mismos que antes.
+const crearEstilos = (c: Paleta) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: c.navy },
+    barraEstado: { backgroundColor: c.navy },
+    scroll: { flexGrow: 1 },
+    hero: {
+      backgroundColor: c.navy,
+      paddingHorizontal: spacing.xl,
+      paddingTop: 32,
+      paddingBottom: 56,
+    },
+    kicker: {
+      color: c.accent,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: fontSize.sm,
+      letterSpacing: 2,
+      marginBottom: spacing.lg,
+    },
+    headline: {
+      color: c.white,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: fontSize.xxl,
+      lineHeight: 36,
+      letterSpacing: -0.6,
+      marginBottom: spacing.xl,
+    },
+    featureRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: spacing.lg,
+    },
+    featureNum: {
+      color: c.accent,
+      fontFamily: "Manrope_700Bold",
+      fontSize: fontSize.xl,
+      width: 36,
+    },
+    featureDivider: {
+      width: 1,
+      alignSelf: "stretch",
+      backgroundColor: "rgba(255,255,255,0.25)",
+      marginHorizontal: spacing.lg,
+    },
+    featureText: {
+      flex: 1,
+      color: "#E5E9F2",
+      fontFamily: "Manrope_500Medium",
+      fontSize: 15,
+      lineHeight: 22,
+    },
+    sheet: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      marginTop: -32,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xl,
+      paddingBottom: 32,
+    },
+    botonTema: {
+      position: "absolute",
+      top: spacing.lg,
+      right: spacing.lg,
+      width: 40,
+      height: 40,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1,
+    },
+    botonTemaPresionado: { backgroundColor: c.chip },
+    logo: { width: 180, height: 143, alignSelf: "center", marginTop: spacing.sm },
+    title: {
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 26,
+      color: c.text,
+      textAlign: "center",
+      marginTop: spacing.md,
+    },
+    subtitle: {
+      fontFamily: "Manrope_400Regular",
+      fontSize: fontSize.lg,
+      color: c.textLight,
+      textAlign: "center",
+      marginTop: spacing.xs,
+      marginBottom: spacing.xl,
+    },
+    footerLine: {
+      height: 1,
+      backgroundColor: c.border,
+      marginTop: spacing.xl,
+    },
+    footer: {
+      fontFamily: "Manrope_400Regular",
+      color: c.textLight,
+      fontSize: fontSize.sm,
+      lineHeight: 18,
+      textAlign: "center",
+      marginTop: spacing.lg,
+    },
+    footerSistema: {
+      fontFamily: "Manrope_400Regular",
+      color: c.textLight,
+      fontSize: fontSize.xs,
+      textAlign: "center",
+      marginTop: spacing.sm,
+    },
+  });

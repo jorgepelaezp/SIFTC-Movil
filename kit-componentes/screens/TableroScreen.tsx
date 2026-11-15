@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View, Text, ScrollView, RefreshControl, StyleSheet } from "react-native";
 import {
   DataError,
@@ -8,9 +9,14 @@ import {
   TopList,
 } from "../components";
 import { useMercado } from "../hooks/useMercado";
-import { colors, spacing } from "../theme";
+import { spacing } from "../theme";
+import { useTema } from "../theme/TemaContext";
+import { Paleta } from "../theme/paletas";
 
 export default function HomeScreen() {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
+
   const { datos, cargando, refrescando, error, refrescar } = useMercado();
   const vacio = !!datos && datos.entidades.length === 0;
 
@@ -53,18 +59,19 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { padding: spacing.lg, gap: spacing.md },
-  title: {
-    fontFamily: "Manrope_800ExtraBold",
-    fontSize: 28,
-    color: colors.text,
-  },
-  subtitle: {
-    fontFamily: "Manrope_400Regular",
-    fontSize: 14,
-    color: colors.textLight,
-    marginTop: -8,
-  },
-  footer: { height: spacing.lg },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    content: { padding: spacing.lg, gap: spacing.md },
+    title: {
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 28,
+      color: colors.text,
+    },
+    subtitle: {
+      fontFamily: "Manrope_400Regular",
+      fontSize: 14,
+      color: colors.textLight,
+      marginTop: -8,
+    },
+    footer: { height: spacing.lg },
+  });
