@@ -106,7 +106,7 @@ export default function ChartsScreen({ entidadId }: Props) {
           contentContainerStyle={styles.chips}
         >
           {entidades.map((e) => {
-            const activo = e.id === seleccion;
+            const activo = String(e.id) === String(seleccion);
             return (
               <Pressable
                 key={String(e.id)}
