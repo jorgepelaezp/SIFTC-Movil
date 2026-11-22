@@ -1,16 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   Image,
   ScrollView,
   KeyboardAvoidingView,
-  Platform,
-  Pressable,
   StyleSheet,
+  Keyboard,
+  type ScrollViewInstance,
+  type TextInputInstance,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Button,
@@ -56,7 +56,7 @@ type Props = {
 };
 
 export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
-  const { colores, esOscuro, alternarTema } = useTema();
+  const { colores, esOscuro } = useTema();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
 
@@ -66,6 +66,16 @@ export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
     sesionExpirada ? "sesionExpirada" : null,
   );
   const [loading, setLoading] = useState(false);
+
+  // Teclado: al abrirse, desplaza el formulario para que campos y botón queden visibles.
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const passRef = useRef<TextInputInstance>(null);
+  useEffect(() => {
+    const mostrar = Keyboard.addListener("keyboardDidShow", () => {
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    });
+    return () => mostrar.remove();
+  }, []);
 
   const handleLogin = async () => {
     setError(null);
@@ -83,14 +93,17 @@ export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      // Android (edge-to-edge en Expo 58) también necesita "padding": sin él el teclado tapa el formulario.
+      behavior="padding">
       <StatusBar style="light" />
 
       {/* Franja fija detrás de la hora y la batería: evita que el texto se monte al hacer scroll */}
       <View style={[styles.barraEstado, { height: insets.top }]} />
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scroll}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         bounces={false}>
         <View style={styles.hero}>
@@ -108,20 +121,8 @@ export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
         </View>
 
         <View style={styles.sheet}>
-          <Pressable
-            onPress={alternarTema}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel={esOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-            style={({ pressed }) => [styles.botonTema, pressed && styles.botonTemaPresionado]}>
-            <Ionicons
-              name={esOscuro ? "sunny-outline" : "moon-outline"}
-              size={20}
-              color={colores.text}
-            />
-          </Pressable>
-
           <Image
+            key={esOscuro ? "logo-oscuro" : "logo-claro"}
             source={esOscuro ? LOGO_OSCURO : LOGO_CLARO}
             style={styles.logo}
             resizeMode="contain"
@@ -137,6 +138,8 @@ export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
             value={user}
             onChangeText={setUser}
             error={error === "credenciales"}
+            returnKeyType="next"
+            onSubmitEditing={() => passRef.current?.focus()}
           />
           <TextField
             label="Contraseña"
@@ -145,6 +148,11 @@ export default function LoginScreen({ onLoggedIn, sesionExpirada }: Props) {
             onChangeText={setPass}
             secureTextEntry
             error={error === "credenciales"}
+            inputRef={passRef}
+            returnKeyType="go"
+            onSubmitEditing={() => {
+              if (user && pass && !loading) handleLogin();
+            }}
           />
 
           <Button
@@ -232,21 +240,6 @@ const crearEstilos = (c: Paleta) =>
       paddingTop: spacing.xl,
       paddingBottom: 32,
     },
-    botonTema: {
-      position: "absolute",
-      top: spacing.lg,
-      right: spacing.lg,
-      width: 40,
-      height: 40,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.surface,
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 1,
-    },
-    botonTemaPresionado: { backgroundColor: c.chip },
     logo: { width: 180, height: 143, alignSelf: "center", marginTop: spacing.sm },
     title: {
       fontFamily: "Manrope_800ExtraBold",

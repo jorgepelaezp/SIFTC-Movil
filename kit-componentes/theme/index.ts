@@ -1,3 +1,7 @@
+/**
+ * @deprecated Paleta FIJA de modo claro: no cambia con el tema.
+ * Usa `const { colores } = useTema()` de "./TemaContext".
+ */
 export const colors = {
   primary: "#10B981", // Secondary del DESIGN.md: botones de acción y deltas positivos
   accent: "#34D399",

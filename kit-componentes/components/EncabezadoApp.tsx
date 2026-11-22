@@ -33,7 +33,10 @@ export function AppHeader({ onAvatarPress }: Props) {
     <View style={styles.container}>
       <View style={styles.row}>
         <Image
+          // key fuerza a remontar la imagen al cambiar de tema (evita que quede el logo anterior)
+          key={esOscuro ? "logo-oscuro" : "logo-claro"}
           source={esOscuro ? LOGO_OSCURO : LOGO_CLARO}
+          accessibilityLabel="ALZA"
           style={styles.logo}
           resizeMode="contain"
         />
@@ -43,7 +46,7 @@ export function AppHeader({ onAvatarPress }: Props) {
           accessibilityRole="button"
           accessibilityLabel="Abrir menú de usuario"
           style={({ pressed }) => [styles.avatar, pressed && styles.avatarPresionado]}>
-          <Ionicons name="person" size={20} color={colors.white} />
+          <Ionicons name="person" size={20} color={colors.avatarIcon} />
         </Pressable>
       </View>
       {/* Ticker horizontal animado continuo (HU-MO-02) */}
@@ -78,7 +81,9 @@ const crearEstilos = (colors: Paleta) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: colors.blue,
+      backgroundColor: colors.avatarBg,
+      borderWidth: 1,
+      borderColor: colors.border,
       alignItems: "center",
       justifyContent: "center",
     },

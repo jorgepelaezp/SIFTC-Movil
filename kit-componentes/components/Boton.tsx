@@ -1,5 +1,8 @@
+import { useMemo } from "react";
 import { Pressable, Text, ActivityIndicator, StyleSheet } from "react-native";
-import { colors, spacing, radius, fontSize } from "../theme";
+import { spacing, radius, fontSize } from "../theme";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
 type Props = {
   title: string;
@@ -14,6 +17,8 @@ export function Button({
   loading = false,
   disabled = false,
 }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   const inactive = disabled || loading;
   return (
     <Pressable
@@ -29,13 +34,14 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    alignItems: "center",
-  },
-  inactive: { opacity: 0.6 },
-  text: { color: colors.white, fontSize: fontSize.md, fontWeight: "600" },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    button: {
+      backgroundColor: colors.primary,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      alignItems: "center",
+    },
+    inactive: { opacity: 0.6 },
+    text: { color: colors.white, fontSize: fontSize.md, fontWeight: "600" },
+  });

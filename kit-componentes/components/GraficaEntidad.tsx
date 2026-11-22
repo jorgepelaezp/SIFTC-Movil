@@ -1,13 +1,13 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { GestureResponderEvent, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 import type { PuntoSerie } from "../models";
-import { colors, radius, spacing } from "../theme";
+import { radius, spacing } from "../theme";
 import { fechaIso, num, pct } from "../utils/formato";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
-// Mismos colores de texto que Variacion: cumplen contraste sobre fondo claro.
-const SUBE = "#187A45";
-const BAJA = "#B83232";
+// Velas: mismos colores de texto que Variacion, tomados del tema (gainText / lossText).
 
 // HU-MO-04 CA3: tiempo que hay que mantener el dedo para ver el detalle.
 const PRESION_MS = 300;
@@ -31,6 +31,8 @@ type Props = {
 const diaMes = (fecha: string) => fechaIso(fecha).slice(0, 5);
 
 export function GraficaEntidad({ serie, tipo, altura = 240, onInspeccion }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   const [ancho, setAncho] = useState(0);
   const [elegido, setElegido] = useState<number | null>(null);
   const activa = useRef(false);
@@ -133,7 +135,7 @@ export function GraficaEntidad({ serie, tipo, altura = 240, onInspeccion }: Prop
             </>
           ) : (
             serie.map((p, i) => {
-              const color = p.cierre >= p.apertura ? SUBE : BAJA;
+              const color = p.cierre >= p.apertura ? colors.gainText : colors.lossText;
               const arriba = y(Math.max(p.apertura, p.cierre));
               const cuerpo = Math.max(1, y(Math.min(p.apertura, p.cierre)) - arriba);
               return [
@@ -165,7 +167,7 @@ export function GraficaEntidad({ serie, tipo, altura = 240, onInspeccion }: Prop
                 x2={x(elegido)}
                 y1={M.arr}
                 y2={M.arr + altoUtil}
-                stroke={colors.navy}
+                stroke={colors.text}
                 strokeWidth={1}
                 strokeDasharray="4 3"
               />
@@ -173,8 +175,8 @@ export function GraficaEntidad({ serie, tipo, altura = 240, onInspeccion }: Prop
                 cx={x(elegido)}
                 cy={y(punto.cierre)}
                 r={5}
-                fill={colors.white}
-                stroke={colors.navy}
+                fill={colors.surface}
+                stroke={colors.text}
                 strokeWidth={2}
               />
             </>
@@ -260,39 +262,40 @@ export function GraficaEntidad({ serie, tipo, altura = 240, onInspeccion }: Prop
   );
 }
 
-const styles = StyleSheet.create({
-  // HU-MO-04 CA2: etiquetas de 12 px como mínimo para leerse en 5 pulgadas
-  eje: {
-    position: "absolute",
-    fontFamily: "Manrope_600SemiBold",
-    fontSize: 12,
-    color: colors.textLight,
-    fontVariant: ["tabular-nums"],
-  },
-  ejeY: { right: 0, width: M.der - 4, textAlign: "right" },
-  ejeX: { bottom: 2 },
-  recuadro: {
-    position: "absolute",
-    backgroundColor: colors.navy,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-  },
-  recuadroFecha: {
-    fontFamily: "Manrope_700Bold",
-    fontSize: 13,
-    color: colors.white,
-    marginBottom: spacing.xs,
-  },
-  recuadroFila: { flexDirection: "row", justifyContent: "space-between" },
-  recuadroNombre: {
-    fontFamily: "Manrope_500Medium",
-    fontSize: 13,
-    color: "#CBD5E1",
-  },
-  recuadroValor: {
-    fontFamily: "Manrope_700Bold",
-    fontSize: 13,
-    color: colors.white,
-    fontVariant: ["tabular-nums"],
-  },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    // HU-MO-04 CA2: etiquetas de 12 px como mínimo para leerse en 5 pulgadas
+    eje: {
+      position: "absolute",
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 12,
+      color: colors.textLight,
+      fontVariant: ["tabular-nums"],
+    },
+    ejeY: { right: 0, width: M.der - 4, textAlign: "right" },
+    ejeX: { bottom: 2 },
+    recuadro: {
+      position: "absolute",
+      backgroundColor: colors.navy,
+      borderRadius: radius.md,
+      padding: spacing.sm,
+    },
+    recuadroFecha: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: 13,
+      color: colors.white,
+      marginBottom: spacing.xs,
+    },
+    recuadroFila: { flexDirection: "row", justifyContent: "space-between" },
+    recuadroNombre: {
+      fontFamily: "Manrope_500Medium",
+      fontSize: 13,
+      color: "#CBD5E1",
+    },
+    recuadroValor: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: 13,
+      color: colors.white,
+      fontVariant: ["tabular-nums"],
+    },
+  });

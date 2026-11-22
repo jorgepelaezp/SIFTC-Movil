@@ -1,10 +1,15 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { colors, spacing, radius, fontSize } from "../theme";
+import { spacing, radius, fontSize } from "../theme";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
 type Props = { total: number; ejemplo?: boolean };
 
 /** Resumen de entidades reales; no representa un índice agregado del mercado. */
 export function ResumenMercado({ total, ejemplo }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   return (
     <View style={styles.card}>
       <Text style={styles.label}>Mercado de entidades</Text>
@@ -17,11 +22,12 @@ export function ResumenMercado({ total, ejemplo }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.lg },
-  label: { fontFamily: "Manrope_600SemiBold", fontSize: fontSize.sm, color: colors.textLight },
-  row: { flexDirection: "row", alignItems: "baseline", gap: spacing.md, marginTop: spacing.xs },
-  value: { fontFamily: "Manrope_800ExtraBold", fontSize: 44, color: colors.text, fontVariant: ["tabular-nums"] },
-  unit: { fontFamily: "Manrope_500Medium", fontSize: fontSize.md, color: colors.textLight },
-  note: { fontFamily: "Manrope_400Regular", fontSize: fontSize.sm, color: colors.textLight, marginTop: spacing.md },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    card: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.lg },
+    label: { fontFamily: "Manrope_600SemiBold", fontSize: fontSize.sm, color: colors.textLight },
+    row: { flexDirection: "row", alignItems: "baseline", gap: spacing.md, marginTop: spacing.xs },
+    value: { fontFamily: "Manrope_800ExtraBold", fontSize: 44, color: colors.text, fontVariant: ["tabular-nums"] },
+    unit: { fontFamily: "Manrope_500Medium", fontSize: fontSize.md, color: colors.textLight },
+    note: { fontFamily: "Manrope_400Regular", fontSize: fontSize.sm, color: colors.textLight, marginTop: spacing.md },
+  });

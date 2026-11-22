@@ -1,9 +1,14 @@
+import { useMemo } from "react";
 import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
-import { colors, spacing, fontSize } from "../theme";
+import { spacing, fontSize } from "../theme";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
 type Props = { message?: string };
 
 export function LoadingIndicator({ message = "Cargando..." }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={colors.primary} />
@@ -12,11 +17,12 @@ export function LoadingIndicator({ message = "Cargando..." }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { alignItems: "center", padding: spacing.lg },
-  text: {
-    marginTop: spacing.sm,
-    color: colors.textLight,
-    fontSize: fontSize.md,
-  },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    container: { alignItems: "center", padding: spacing.lg },
+    text: {
+      marginTop: spacing.sm,
+      color: colors.textLight,
+      fontSize: fontSize.md,
+    },
+  });

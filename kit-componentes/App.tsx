@@ -380,26 +380,26 @@ const crearEstilos = (colors: Paleta) =>
       gap: 9,
       paddingHorizontal: 14,
       paddingVertical: 9,
-      backgroundColor: "#FFF7E6",
+      backgroundColor: colors.warningBg,
       borderBottomWidth: 1,
-      borderBottomColor: "#F2D9A6",
+      borderBottomColor: colors.border,
     },
 
     offlineDot: {
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: "#C58A19",
+      backgroundColor: colors.warning,
     },
 
     offlineTitle: {
-      color: "#76520D",
+      color: colors.warning,
       fontSize: 12,
       fontWeight: "700",
     },
 
     offlineText: {
-      color: "#76520D",
+      color: colors.warning,
       fontSize: 10,
       marginTop: 2,
     },

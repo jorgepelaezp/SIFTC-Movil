@@ -1,7 +1,10 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import type { Entidad } from "../models";
-import { colors, spacing, radius, fontSize } from "../theme";
+import { spacing, radius, fontSize } from "../theme";
 import { pct } from "../utils/formato";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
 type Props = {
   entidades: Entidad[];
@@ -14,6 +17,8 @@ const SUBE_OSCURO = "#5FD08F";
 const BAJA_OSCURO = "#FF8F8F";
 
 export function DaySummary({ entidades, mayorSubida, mayorBajada }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   const suben = entidades.filter((e) => e.variacionPct > 0).length;
   const bajan = entidades.filter((e) => e.variacionPct < 0).length;
 
@@ -40,23 +45,24 @@ export function DaySummary({ entidades, mayorSubida, mayorBajada }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.navy,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  title: {
-    fontFamily: "Manrope_600SemiBold",
-    fontSize: fontSize.sm,
-    color: "#AEB8D0",
-  },
-  row: { flexDirection: "row", gap: spacing.xl },
-  count: { fontFamily: "Manrope_800ExtraBold", fontSize: fontSize.xl },
-  line: {
-    fontFamily: "Manrope_500Medium",
-    fontSize: fontSize.md,
-    color: colors.white,
-  },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.navy,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    title: {
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: fontSize.sm,
+      color: "#AEB8D0",
+    },
+    row: { flexDirection: "row", gap: spacing.xl },
+    count: { fontFamily: "Manrope_800ExtraBold", fontSize: fontSize.xl },
+    line: {
+      fontFamily: "Manrope_500Medium",
+      fontSize: fontSize.md,
+      color: colors.white,
+    },
+  });
