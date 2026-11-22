@@ -1,5 +1,8 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
-import { colors, radius } from "../theme";
+import { radius } from "../theme";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
 type Props = {
   height: number;
@@ -9,6 +12,8 @@ type Props = {
 };
 
 export function PlaceholderBox({ height, label, dark = false, style }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   return (
     <View
       style={[
@@ -26,18 +31,19 @@ export function PlaceholderBox({ height, label, dark = false, style }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  box: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    fontFamily: "Manrope_500Medium",
-    fontSize: 12,
-    color: colors.textLight,
-  },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    box: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    label: {
+      fontFamily: "Manrope_500Medium",
+      fontSize: 12,
+      color: colors.textLight,
+    },
+  });

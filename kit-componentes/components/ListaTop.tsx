@@ -1,8 +1,11 @@
+import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import type { Entidad } from "../models";
 import { Variation } from "./Variacion";
-import { colors, spacing, radius, fontSize } from "../theme";
+import { spacing, radius, fontSize } from "../theme";
 import { num } from "../utils/formato";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
 type Props = {
   title: string;
@@ -12,6 +15,8 @@ type Props = {
 };
 
 export function TopList({ title, entidades, onPressEntidad }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{title}</Text>
@@ -41,51 +46,52 @@ export function TopList({ title, entidades, onPressEntidad }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-  },
-  title: {
-    fontFamily: "Manrope_800ExtraBold",
-    fontSize: fontSize.lg,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  // Filas de al menos 56 px para tocarlas con comodidad (regla del tablero web)
-  row: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  pos: {
-    width: 20,
-    fontFamily: "Manrope_700Bold",
-    fontSize: fontSize.md,
-    color: colors.textLight,
-  },
-  name: { flex: 1 },
-  nameText: {
-    fontFamily: "Manrope_700Bold",
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  small: {
-    fontFamily: "Manrope_400Regular",
-    fontSize: fontSize.sm,
-    color: colors.textLight,
-  },
-  right: { alignItems: "flex-end" },
-  index: {
-    fontFamily: "Manrope_700Bold",
-    fontSize: fontSize.md,
-    color: colors.text,
-    fontVariant: ["tabular-nums"],
-  },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.lg,
+    },
+    title: {
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: fontSize.lg,
+      color: colors.text,
+      marginBottom: spacing.sm,
+    },
+    // Filas de al menos 56 px para tocarlas con comodidad (regla del tablero web)
+    row: {
+      minHeight: 56,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    pos: {
+      width: 20,
+      fontFamily: "Manrope_700Bold",
+      fontSize: fontSize.md,
+      color: colors.textLight,
+    },
+    name: { flex: 1 },
+    nameText: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: fontSize.md,
+      color: colors.text,
+    },
+    small: {
+      fontFamily: "Manrope_400Regular",
+      fontSize: fontSize.sm,
+      color: colors.textLight,
+    },
+    right: { alignItems: "flex-end" },
+    index: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: fontSize.md,
+      color: colors.text,
+      fontVariant: ["tabular-nums"],
+    },
+  });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import {
   DataError,
@@ -10,8 +10,9 @@ import { GraficaEntidad, TipoGrafica } from "../components/GraficaEntidad";
 import type { Entidad } from "../models";
 import { useFicha } from "../hooks/useFicha";
 import { PERIODOS, resumenPeriodo } from "../services/ficha";
-import { PALETA_MERCADO } from "../services/datosMercado";
 import { spacing } from "../theme";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 import { fechaIso, num } from "../utils/formato";
 import { exportarSerieCsv } from "../services/exportacion";
 import { comprobarServidor, type DiagnosticoServidor } from "../services/diagnostico";
@@ -23,6 +24,8 @@ type Props = {
 
 // HU-MO-04: ficha de entidad con índice, variación, ranking y gráfica del periodo.
 export default function ChartsScreen({ entidadId }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   const {
     entidades,
     seleccion,
@@ -170,7 +173,7 @@ export default function ChartsScreen({ entidadId }: Props) {
             <Pressable onPress={() => void exportar()} disabled={exportando}
               accessibilityRole="button" accessibilityLabel="Exportar serie en CSV"
               style={[styles.accionPrincipal, exportando && { opacity: 0.6 }]}>
-              {exportando && <ActivityIndicator color="#FFFFFF" size="small" />}
+              {exportando && <ActivityIndicator color={colors.chipActiveText} size="small" />}
               <Text style={styles.accionPrincipalTexto}>
                 {exportando ? "Exportando CSV..." : "Exportar serie CSV"}
               </Text>
@@ -256,6 +259,8 @@ type SegmentoProps = {
 };
 
 function Segmento({ opciones, valor, onCambio }: SegmentoProps) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   return (
     <View style={styles.segmento}>
       {opciones.map((o) => {
@@ -278,227 +283,228 @@ function Segmento({ opciones, valor, onCambio }: SegmentoProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  diagnosticoFila: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
-  accionSecundaria: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 9, backgroundColor: "#E7EDF4" },
-  accionTexto: { fontSize: 12, fontWeight: "700", color: "#173B65" },
-  estadoConexion: { fontSize: 11, color: "#64748B", flexShrink: 1 },
-  accionPrincipal: { backgroundColor: "#173B65", borderRadius: 10, padding: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  accionPrincipalTexto: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
-  screen: { flex: 1, backgroundColor: PALETA_MERCADO.fondoClaro },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xl * 2,
-    gap: spacing.md,
-  },
-  header: { marginBottom: 2 },
-  crumb: {
-    fontFamily: "Manrope_500Medium",
-    fontSize: 12,
-    color: PALETA_MERCADO.textoMuted,
-    marginBottom: 2,
-  },
-  title: {
-    fontFamily: "Manrope_800ExtraBold",
-    fontSize: 26,
-    color: PALETA_MERCADO.azulNoche,
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontFamily: "Manrope_400Regular",
-    fontSize: 13,
-    color: PALETA_MERCADO.textoMuted,
-    marginTop: 4,
-    lineHeight: 18,
-  },
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    diagnosticoFila: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
+    accionSecundaria: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 9, backgroundColor: colors.chip },
+    accionTexto: { fontSize: 12, fontWeight: "700", color: colors.text },
+    estadoConexion: { fontSize: 11, color: colors.textLight, flexShrink: 1 },
+    accionPrincipal: { backgroundColor: colors.chipActiveBg, borderRadius: 10, padding: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+    accionPrincipalTexto: { fontSize: 13, fontWeight: "700", color: colors.chipActiveText },
+    screen: { flex: 1, backgroundColor: colors.background },
+    content: {
+      padding: spacing.lg,
+      paddingBottom: spacing.xl * 2,
+      gap: spacing.md,
+    },
+    header: { marginBottom: 2 },
+    crumb: {
+      fontFamily: "Manrope_500Medium",
+      fontSize: 12,
+      color: colors.textLight,
+      marginBottom: 2,
+    },
+    title: {
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 26,
+      color: colors.textStrong,
+      letterSpacing: -0.3,
+    },
+    subtitle: {
+      fontFamily: "Manrope_400Regular",
+      fontSize: 13,
+      color: colors.textLight,
+      marginTop: 4,
+      lineHeight: 18,
+    },
 
-  /* Selector de entidad */
-  chips: { gap: 8, paddingVertical: 2 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: PALETA_MERCADO.blanco,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-  },
-  chipActivo: {
-    backgroundColor: PALETA_MERCADO.azulNoche,
-    borderColor: PALETA_MERCADO.azulNoche,
-  },
-  chipTexto: {
-    fontFamily: "Manrope_600SemiBold",
-    fontSize: 12,
-    color: PALETA_MERCADO.azulNoche,
-  },
-  chipTextoActivo: { color: PALETA_MERCADO.blanco },
+    /* Selector de entidad */
+    chips: { gap: 8, paddingVertical: 2 },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    chipActivo: {
+      backgroundColor: colors.chipActiveBg,
+      borderColor: colors.chipActiveBg,
+    },
+    chipTexto: {
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 12,
+      color: colors.textStrong,
+    },
+    chipTextoActivo: { color: colors.chipActiveText },
 
-  /* Tarjetas */
-  card: {
-    backgroundColor: PALETA_MERCADO.blanco,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: PALETA_MERCADO.bordeClaro,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardGrafica: { paddingHorizontal: 8, paddingVertical: 12 },
-  cardTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  cardTitleBlock: { flex: 1 },
-  nombre: {
-    fontFamily: "Manrope_700Bold",
-    fontSize: 17,
-    color: PALETA_MERCADO.azulNoche,
-  },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 2,
-  },
-  codigo: {
-    fontFamily: "Manrope_500Medium",
-    fontSize: 11,
-    color: PALETA_MERCADO.textoMuted,
-  },
-  sectorBadge: {
-    backgroundColor: "#EBF3FA",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderWidth: 1,
-    borderColor: "#D0E2F2",
-  },
-  sectorText: {
-    fontFamily: "Manrope_600SemiBold",
-    fontSize: 10,
-    color: PALETA_MERCADO.azulAcero,
-  },
-  variacion: { fontSize: 13 },
-  indiceRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 8,
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
-  },
-  indiceLabel: {
-    fontFamily: "Manrope_700Bold",
-    fontSize: 12,
-    color: PALETA_MERCADO.textoMuted,
-  },
-  valor: {
-    fontFamily: "Manrope_800ExtraBold",
-    fontSize: 36,
-    color: PALETA_MERCADO.azulNoche,
-    fontVariant: ["tabular-nums"],
-  },
-  soft: {
-    fontFamily: "Manrope_400Regular",
-    fontSize: 12,
-    color: PALETA_MERCADO.textoMuted,
-    flexShrink: 1,
-  },
-  ranking: {
-    alignSelf: "flex-start",
-    backgroundColor: "#EBF3FA",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#D0E2F2",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginTop: 12,
-  },
-  rankingTexto: {
-    fontFamily: "Manrope_700Bold",
-    fontSize: 11,
-    color: PALETA_MERCADO.azulAcero,
-  },
+    /* Tarjetas */
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: "#0F172A",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    cardGrafica: { paddingHorizontal: 8, paddingVertical: 12 },
+    cardTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8,
+    },
+    cardTitleBlock: { flex: 1 },
+    nombre: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: 17,
+      color: colors.textStrong,
+    },
+    metaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginTop: 2,
+    },
+    codigo: {
+      fontFamily: "Manrope_500Medium",
+      fontSize: 11,
+      color: colors.textLight,
+    },
+    sectorBadge: {
+      backgroundColor: colors.blueSoft,
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 1.5,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    sectorText: {
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 10,
+      color: colors.blue,
+    },
+    variacion: { fontSize: 13 },
+    indiceRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      gap: 8,
+      marginTop: 12,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    indiceLabel: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: 12,
+      color: colors.textLight,
+    },
+    valor: {
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 36,
+      color: colors.textStrong,
+      fontVariant: ["tabular-nums"],
+    },
+    soft: {
+      fontFamily: "Manrope_400Regular",
+      fontSize: 12,
+      color: colors.textLight,
+      flexShrink: 1,
+    },
+    ranking: {
+      alignSelf: "flex-start",
+      backgroundColor: colors.blueSoft,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      marginTop: 12,
+    },
+    rankingTexto: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: 11,
+      color: colors.blue,
+    },
 
-  /* Controles */
-  controles: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  segmento: {
-    flexDirection: "row",
-    backgroundColor: "#F1F5F9",
-    borderRadius: 10,
-    padding: 3,
-  },
-  segmentoOpcion: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-  },
-  segmentoActivo: {
-    backgroundColor: PALETA_MERCADO.blanco,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  segmentoTexto: {
-    fontFamily: "Manrope_600SemiBold",
-    fontSize: 12,
-    color: PALETA_MERCADO.textoMuted,
-  },
-  segmentoTextoActivo: { color: PALETA_MERCADO.azulNoche },
+    /* Controles */
+    controles: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    segmento: {
+      flexDirection: "row",
+      backgroundColor: colors.chip,
+      borderRadius: 10,
+      padding: 3,
+    },
+    segmentoOpcion: {
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 8,
+    },
+    segmentoActivo: {
+      backgroundColor: colors.surface,
+      shadowColor: "#0F172A",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    segmentoTexto: {
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 12,
+      color: colors.textLight,
+    },
+    segmentoTextoActivo: { color: colors.textStrong },
 
-  /* Gráfica */
-  ayuda: {
-    fontFamily: "Manrope_400Regular",
-    fontSize: 11,
-    color: PALETA_MERCADO.textoMuted,
-    textAlign: "center",
-    marginTop: 8,
-  },
+    /* Gráfica */
+    ayuda: {
+      fontFamily: "Manrope_400Regular",
+      fontSize: 11,
+      color: colors.textLight,
+      textAlign: "center",
+      marginTop: 8,
+    },
 
-  /* Resumen del periodo */
-  celdas: { flexDirection: "row", gap: 8 },
-  celda: {
-    flex: 1,
-    backgroundColor: PALETA_MERCADO.blanco,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: PALETA_MERCADO.bordeClaro,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-    alignItems: "center",
-  },
-  celdaNombre: {
-    fontFamily: "Manrope_500Medium",
-    fontSize: 10,
-    color: PALETA_MERCADO.textoMuted,
-    marginBottom: 2,
-  },
-  celdaValor: {
-    fontFamily: "Manrope_700Bold",
-    fontSize: 14,
-    color: PALETA_MERCADO.azulNoche,
-    fontVariant: ["tabular-nums"],
-  },
+    /* Resumen del periodo */
+    celdas: { flexDirection: "row", gap: 8 },
+    celda: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 8,
+      paddingHorizontal: 6,
+      alignItems: "center",
+    },
+    celdaNombre: {
+      fontFamily: "Manrope_500Medium",
+      fontSize: 10,
+      color: colors.textLight,
+      marginBottom: 2,
+    },
+    celdaValor: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: 14,
+      color: colors.textStrong,
+      fontVariant: ["tabular-nums"],
+    },
 
-  /* Pie */
-  footer: {
-    alignItems: "center",
-    paddingVertical: spacing.md,
-    marginTop: 4,
-  },
-  footerText: {
-    fontFamily: "Manrope_400Regular",
-    fontSize: 11,
-    color: PALETA_MERCADO.textoMuted,
-    textAlign: "center",
-    lineHeight: 16,
-  },
-});
+    /* Pie */
+    footer: {
+      alignItems: "center",
+      paddingVertical: spacing.md,
+      marginTop: 4,
+    },
+    footerText: {
+      fontFamily: "Manrope_400Regular",
+      fontSize: 11,
+      color: colors.textLight,
+      textAlign: "center",
+      lineHeight: 16,
+    },
+  });

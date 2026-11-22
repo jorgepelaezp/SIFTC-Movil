@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,7 +19,8 @@ import {
 } from "../services/ranking";
 import { leerCache } from "../services/offline";
 import { suscribirDatosActualizados } from "../services/syncEvents";
-import { colors } from "../theme";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
 type Props = {
   onSeleccionarEntidad?: (id: string | number) => void;
@@ -30,6 +31,8 @@ const claveId = (id: string | number) => String(id);
 const CLAVE_API_WATCHLIST = `${process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1"}/watchlist`;
 
 export default function WatchlistScreen({ onSeleccionarEntidad }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   const [entidades, setEntidades] = useState<Entidad[]>([]);
   const [seguidas, setSeguidas] = useState<string[]>([]);
   const [busqueda, setBusqueda] = useState("");
@@ -167,7 +170,7 @@ export default function WatchlistScreen({ onSeleccionarEntidad }: Props) {
           value={busqueda}
           onChangeText={setBusqueda}
           placeholder="Buscar entidad, código o sector..."
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textLight}
           autoCapitalize="none"
         />
 
@@ -276,82 +279,83 @@ export default function WatchlistScreen({ onSeleccionarEntidad }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  pantalla: { flex: 1, backgroundColor: colors.background },
-  contenido: { padding: 16, paddingBottom: 40, gap: 12 },
-  titulo: {
-    fontFamily: "Manrope_800ExtraBold",
-    fontSize: 27,
-    color: colors.text,
-  },
-  descripcion: { color: colors.textLight, fontSize: 13, lineHeight: 20 },
-  resumen: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: colors.white,
-    padding: 15,
-    borderRadius: 12,
-  },
-  total: { color: colors.text, fontSize: 16, fontWeight: "700" },
-  buscar: {
-    borderColor: colors.border,
-    borderWidth: 1,
-    backgroundColor: colors.white,
-    padding: 12,
-    borderRadius: 10,
-    color: colors.text,
-  },
-  filtros: { flexDirection: "row", gap: 8 },
-  filtro: {
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filtroActivo: { backgroundColor: colors.blue, borderColor: colors.blue },
-  filtroTexto: { color: colors.text, fontWeight: "700" },
-  filtroTextoActivo: { color: colors.white },
-  aviso: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#E0EDFF",
-    padding: 12,
-    borderRadius: 10,
-    gap: 10,
-  },
-  avisoTexto: { flex: 1, color: colors.text, fontSize: 12 },
-  deshacer: { color: colors.blue, fontWeight: "800" },
-  avisoError: { padding: 12, gap: 8 },
-  error: { color: colors.error },
-  vacio: { textAlign: "center", marginTop: 25, color: colors.textLight },
-  tarjeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    padding: 14,
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 12,
-  },
-  datos: { flex: 1, gap: 4 },
-  nombre: { color: colors.text, fontSize: 15, fontWeight: "800" },
-  detalle: { color: colors.textLight, fontSize: 11 },
-  indice: { color: colors.blue, fontSize: 12, fontWeight: "700" },
-  boton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    padding: 9,
-    borderRadius: 9,
-    borderColor: colors.blue,
-    borderWidth: 1,
-  },
-  botonActivo: { backgroundColor: colors.blue },
-  botonTexto: { fontSize: 11, color: colors.blue, fontWeight: "800" },
-  botonTextoActivo: { color: colors.white },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    pantalla: { flex: 1, backgroundColor: colors.background },
+    contenido: { padding: 16, paddingBottom: 40, gap: 12 },
+    titulo: {
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 27,
+      color: colors.text,
+    },
+    descripcion: { color: colors.textLight, fontSize: 13, lineHeight: 20 },
+    resumen: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      backgroundColor: colors.surface,
+      padding: 15,
+      borderRadius: 12,
+    },
+    total: { color: colors.text, fontSize: 16, fontWeight: "700" },
+    buscar: {
+      borderColor: colors.border,
+      borderWidth: 1,
+      backgroundColor: colors.inputBg,
+      padding: 12,
+      borderRadius: 10,
+      color: colors.text,
+    },
+    filtros: { flexDirection: "row", gap: 8 },
+    filtro: {
+      paddingVertical: 9,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    filtroActivo: { backgroundColor: colors.blue, borderColor: colors.blue },
+    filtroTexto: { color: colors.text, fontWeight: "700" },
+    filtroTextoActivo: { color: colors.white },
+    aviso: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: colors.blueSoft,
+      padding: 12,
+      borderRadius: 10,
+      gap: 10,
+    },
+    avisoTexto: { flex: 1, color: colors.text, fontSize: 12 },
+    deshacer: { color: colors.blue, fontWeight: "800" },
+    avisoError: { padding: 12, gap: 8 },
+    error: { color: colors.error },
+    vacio: { textAlign: "center", marginTop: 25, color: colors.textLight },
+    tarjeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      padding: 14,
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 12,
+    },
+    datos: { flex: 1, gap: 4 },
+    nombre: { color: colors.text, fontSize: 15, fontWeight: "800" },
+    detalle: { color: colors.textLight, fontSize: 11 },
+    indice: { color: colors.blue, fontSize: 12, fontWeight: "700" },
+    boton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      padding: 9,
+      borderRadius: 9,
+      borderColor: colors.blue,
+      borderWidth: 1,
+    },
+    botonActivo: { backgroundColor: colors.blue },
+    botonTexto: { fontSize: 11, color: colors.blue, fontWeight: "800" },
+    botonTextoActivo: { color: colors.white },
+  });

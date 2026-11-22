@@ -1,16 +1,18 @@
+import { useMemo } from "react";
 import { Text, StyleSheet, StyleProp, TextStyle } from "react-native";
-import { colors } from "../theme";
 import { direccion, pct } from "../utils/formato";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
-// Colores de texto sobre fondo claro con contraste suficiente (documento de Rafael).
-// El verde #10B981 del tema no cumple contraste como texto.
-const TEXTO_SUBE = "#187A45";
-const TEXTO_BAJA = "#B83232";
+// Colores de texto con contraste suficiente (documento de Rafael), ahora por tema:
+// claro #187A45 / #B83232, oscuro #4ADE80 / #F87171 (paletas.ts: gainText / lossText).
 
 type Props = { value: number; style?: StyleProp<TextStyle> };
 
 /** Variación con símbolo ▲/▼ además del color: nunca solo color. */
 export function Variation({ value, style }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   const dir = direccion(value);
   const simbolo = dir === "sube" ? "▲" : dir === "baja" ? "▼" : "–";
   const etiqueta =
@@ -20,8 +22,8 @@ export function Variation({ value, style }: Props) {
       accessibilityLabel={`${etiqueta} ${pct(value)}`}
       style={[
         styles.base,
-        dir === "sube" && { color: TEXTO_SUBE },
-        dir === "baja" && { color: TEXTO_BAJA },
+        dir === "sube" && { color: colors.gainText },
+        dir === "baja" && { color: colors.lossText },
         style,
       ]}>
       {simbolo} {pct(value)}
@@ -29,11 +31,12 @@ export function Variation({ value, style }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    fontFamily: "Manrope_700Bold",
-    fontSize: 14,
-    color: colors.textLight,
-    fontVariant: ["tabular-nums"],
-  },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    base: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: 14,
+      color: colors.textLight,
+      fontVariant: ["tabular-nums"],
+    },
+  });

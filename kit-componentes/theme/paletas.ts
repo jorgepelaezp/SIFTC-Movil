@@ -1,6 +1,7 @@
 // Colores de la app en modo claro y oscuro.
 // "claro" es igual al theme actual, así que nada cambia en modo claro.
-// "oscuro" es provisional: lo ajustamos cuando tengamos los colores de la web.
+// "oscuro": alineado al modo oscuro del portal web. Ningún componente debe usar hex fijos;
+// todo color sale de aquí vía useTema().colores.
 
 const claro = {
   primary: "#10B981",
@@ -23,6 +24,16 @@ const claro = {
   errorBg: "#FFDAD6",
   warning: "#92400E",
   warningBg: "#FEF3C7",
+  // --- Tokens semánticos (modo oscuro) ---
+  gainText: "#187A45",       // verde de texto con contraste AA sobre surface
+  lossText: "#B83232",       // rojo de texto con contraste AA sobre surface
+  textStrong: "#0D253A",     // títulos de pantalla
+  inputBg: "#FFFFFF",        // fondo de campos de texto
+  chipActiveBg: "#0D253A",   // chip/segmento seleccionado
+  chipActiveText: "#FFFFFF",
+  avatarBg: "#0D253A",       // avatar como en el portal web (azul marino)
+  avatarIcon: "#FFFFFF",
+  divider: "#F1F5F9",        // líneas internas de tarjeta
 };
 
 export type Paleta = typeof claro;
@@ -48,6 +59,15 @@ const oscuro: Paleta = {
   errorBg: "#5C1A16",
   warning: "#FCD34D",
   warningBg: "#3D2E0A",
+  gainText: "#4ADE80",
+  lossText: "#F87171",
+  textStrong: "#F1F5F9",
+  inputBg: "#0F2236",
+  chipActiveBg: "#E6EDF5",
+  chipActiveText: "#0A1A2A",
+  avatarBg: "#5B9BF0",       // azul claro, se distingue del fondo oscuro
+  avatarIcon: "#0A1A2A",
+  divider: "#1B3149",
 };
 
 export type ModoTema = "claro" | "oscuro";

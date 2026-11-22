@@ -1,5 +1,8 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { colors, spacing, radius, fontSize } from "../theme";
+import { spacing, radius, fontSize } from "../theme";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
 export type ErrorType = "credenciales" | "sinConexion" | "sesionExpirada";
 
@@ -12,6 +15,8 @@ const MESSAGES: Record<ErrorType, string> = {
 };
 
 export function ErrorMessage({ type }: Props) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   // Avisos que no son culpa del usuario se muestran en ámbar
   const isConnection = type !== "credenciales";
   return (
@@ -28,15 +33,16 @@ export function ErrorMessage({ type }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  box: {
-    padding: spacing.md,
-    borderRadius: radius.md,
-    marginBottom: spacing.md,
-  },
-  errorBox: { backgroundColor: colors.errorBg },
-  warningBox: { backgroundColor: colors.warningBg },
-  text: { fontSize: fontSize.sm, fontWeight: "500" },
-  errorText: { color: colors.error },
-  warningText: { color: colors.warning },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    box: {
+      padding: spacing.md,
+      borderRadius: radius.md,
+      marginBottom: spacing.md,
+    },
+    errorBox: { backgroundColor: colors.errorBg },
+    warningBox: { backgroundColor: colors.warningBg },
+    text: { fontSize: fontSize.sm, fontWeight: "500" },
+    errorText: { color: colors.error },
+    warningText: { color: colors.warning },
+  });

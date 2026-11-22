@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
 import type { Entidad } from "../models";
 import { getEntidades } from "../services/mercado";
 import { TopList } from "../components/ListaTop";
+import { useTema } from "../theme/TemaContext";
+import type { Paleta } from "../theme/paletas";
 
 type RankingScreenProps = {
   onSeleccionarEntidad: (entidadId: string | number) => void;
@@ -19,6 +21,8 @@ type RankingScreenProps = {
 export default function RankingScreen({
   onSeleccionarEntidad,
 }: RankingScreenProps) {
+  const { colores: colors } = useTema();
+  const styles = useMemo(() => crearEstilos(colors), [colors]);
   const [entidades, setEntidades] = useState<Entidad[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +63,7 @@ export default function RankingScreen({
       </Text>
 
       {cargando ? (
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.text} />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : entidades.length === 0 ? (
@@ -81,25 +85,26 @@ export default function RankingScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    gap: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#0D253A",
-  },
-  subtitle: {
-    fontSize: 13,
-    color: "#64748B",
-    marginBottom: 8,
-  },
-  error: {
-    color: "#BA1A1A",
-  },
-  empty: {
-    color: "#64748B",
-  },
-});
+const crearEstilos = (colors: Paleta) =>
+  StyleSheet.create({
+    container: {
+      padding: 16,
+      gap: 12,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: "800",
+      color: colors.textStrong,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: colors.textLight,
+      marginBottom: 8,
+    },
+    error: {
+      color: colors.error,
+    },
+    empty: {
+      color: colors.textLight,
+    },
+  });
