@@ -31,6 +31,11 @@
       "expo-sqlite",
       "expo-sharing",
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "02cf7e1d-e967-41b9-ba31-73d9471d244b"
+      }
+    }
   }
 }
