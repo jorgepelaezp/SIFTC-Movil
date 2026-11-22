@@ -10,6 +10,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.siftc.movil",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -27,7 +29,13 @@
       "expo-splash-screen",
       "expo-secure-store",
       "expo-sqlite",
-      "expo-sharing"
-    ]
+      "expo-sharing",
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "02cf7e1d-e967-41b9-ba31-73d9471d244b"
+      }
+    }
   }
 }

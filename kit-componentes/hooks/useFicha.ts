@@ -51,7 +51,7 @@ export function useFicha(idInicial?: Entidad["id"]) {
         }
 
         setSeleccion((actual) =>
-          actual !== undefined && lista.some((e) => e.id === actual)
+          actual !== undefined && lista.some((e) => String(e.id) === String(actual))
             ? actual
             : [...lista].sort((a, b) => b.indice - a.indice)[0]?.id
         );
@@ -70,7 +70,7 @@ export function useFicha(idInicial?: Entidad["id"]) {
 
   // Ficha de la entidad elegida en el periodo elegido.
   useEffect(() => {
-    const entidad = entidades.find((e) => e.id === seleccion);
+    const entidad = entidades.find((e) => String(e.id) === String(seleccion));
 
     if (!entidad) return;
 

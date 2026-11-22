@@ -42,6 +42,8 @@ import {
 } from "./services/sesion";
 
 import { sincronizarPendientes } from "./services/sincronizacion";
+import { useNotificaciones } from "./hooks/useNotificaciones";
+
 
 import {
   cantidadMutacionesPendientes,
@@ -105,6 +107,11 @@ export default function App() {
     },
     [cambiarTab]
   );
+
+  
+  // Notificaciones push: solo con sesión iniciada.
+  // Al tocar una notificación se abre la ficha (pestaña Gráficas).
+  useNotificaciones(!!token, navegarAGraficas);
 
   // Recuperar la sesión guardada si el token sigue vigente.
   useEffect(() => {

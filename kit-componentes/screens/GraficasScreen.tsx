@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import {
   DataError,
@@ -16,6 +16,12 @@ import type { Paleta } from "../theme/paletas";
 import { fechaIso, num } from "../utils/formato";
 import { exportarSerieCsv } from "../services/exportacion";
 import { comprobarServidor, type DiagnosticoServidor } from "../services/diagnostico";
+import { getWatchlist } from "../services/ranking";
+import { suscribirDatosActualizados } from "../services/syncEvents";
+import { InterruptorAvisos } from "../components/InterruptorAvisos";
+
+
+
 
 type Props = {
   /** Entidad a mostrar al llegar desde otra pantalla (tocar una entidad). */
@@ -38,11 +44,41 @@ export default function ChartsScreen({ entidadId }: Props) {
     reintentar,
   } = useFicha(entidadId);
 
+    // El id puede llegar como texto (p. ej. "4" desde una notificación).
+  // Se busca la entidad real y se selecciona su id original (número o texto).
+  const ultimoAplicado = useRef<string | null>(null);
   useEffect(() => {
-    if (entidadId !== undefined) {
-      seleccionar(entidadId);
-    }
-  }, [entidadId, seleccionar]);
+    if (entidadId === undefined) return;
+    const real = entidades.find((e) => String(e.id) === String(entidadId));
+    const clave = `${String(entidadId)}|${real ? "ok" : "pendiente"}`;
+    if (ultimoAplicado.current === clave) return;
+    ultimoAplicado.current = clave;
+    seleccionar(real ? real.id : entidadId);
+  }, [entidadId, entidades, seleccionar]);
+
+
+  
+  // HU-MO-05: ids de la watchlist, para mostrar el interruptor de alertas
+  const [idsWatchlist, setIdsWatchlist] = useState<string[]>([]);
+  useEffect(() => {
+    let activo = true;
+    const cargar = () =>
+      getWatchlist()
+        .then((lista) => {
+          if (activo) setIdsWatchlist(lista.map((e) => String(e.id)));
+        })
+        .catch(() => {
+          if (activo) setIdsWatchlist([]);
+        });
+    cargar();
+    const cancelar = suscribirDatosActualizados(cargar);
+    return () => {
+      activo = false;
+      cancelar();
+    };
+  }, [seleccion]);
+
+
 
   const [tipo, setTipo] = useState<TipoGrafica>("velas");
   const [exportando, setExportando] = useState(false);
@@ -106,7 +142,7 @@ export default function ChartsScreen({ entidadId }: Props) {
           contentContainerStyle={styles.chips}
         >
           {entidades.map((e) => {
-            const activo = e.id === seleccion;
+            const activo = String(e.id) === String(seleccion);
             return (
               <Pressable
                 key={String(e.id)}
@@ -166,6 +202,11 @@ export default function ChartsScreen({ entidadId }: Props) {
                 </Text>
               </View>
             )}
+
+            {idsWatchlist.includes(String(ficha.entidad.id)) && (
+              <InterruptorAvisos entidadId={ficha.entidad.id} />
+            )}
+
           </View>
 
           {/* CSV oficial del periodo visible, a través del endpoint de exportación. */}
