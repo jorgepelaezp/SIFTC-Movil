@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import {
   DataError,
@@ -44,11 +44,17 @@ export default function ChartsScreen({ entidadId }: Props) {
     reintentar,
   } = useFicha(entidadId);
 
+    // El id puede llegar como texto (p. ej. "4" desde una notificación).
+  // Se busca la entidad real y se selecciona su id original (número o texto).
+  const ultimoAplicado = useRef<string | null>(null);
   useEffect(() => {
-    if (entidadId !== undefined) {
-      seleccionar(entidadId);
-    }
-  }, [entidadId, seleccionar]);
+    if (entidadId === undefined) return;
+    const real = entidades.find((e) => String(e.id) === String(entidadId));
+    const clave = `${String(entidadId)}|${real ? "ok" : "pendiente"}`;
+    if (ultimoAplicado.current === clave) return;
+    ultimoAplicado.current = clave;
+    seleccionar(real ? real.id : entidadId);
+  }, [entidadId, entidades, seleccionar]);
 
 
   
@@ -72,7 +78,7 @@ export default function ChartsScreen({ entidadId }: Props) {
     };
   }, [seleccion]);
 
-  
+
 
   const [tipo, setTipo] = useState<TipoGrafica>("velas");
   const [exportando, setExportando] = useState(false);
@@ -196,6 +202,11 @@ export default function ChartsScreen({ entidadId }: Props) {
                 </Text>
               </View>
             )}
+
+            {idsWatchlist.includes(String(ficha.entidad.id)) && (
+              <InterruptorAvisos entidadId={ficha.entidad.id} />
+            )}
+
           </View>
 
           {/* CSV oficial del periodo visible, a través del endpoint de exportación. */}
