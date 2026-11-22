@@ -51,10 +51,23 @@ async function enviarTokenAlBackend(token: string) {
   // PENDIENTE: endpoint que confirme Moisés
 }
 
+// Preferencias en memoria mientras se usan mocks (se pierden al cerrar la app)
+const avisosMock = new Map<string, boolean>();
+
+export async function obtenerAvisosEntidad(entidadId: string): Promise<boolean> {
+  if (USAR_MOCKS) {
+    return avisosMock.get(entidadId) ?? true;
+  }
+  // PENDIENTE: endpoint que confirme Moisés. Por ahora, activado por defecto.
+  return true;
+}
+
 export async function cambiarAvisosEntidad(entidadId: string, activo: boolean) {
   if (USAR_MOCKS) {
+    avisosMock.set(entidadId, activo);
     console.log('[mock] avisos de', entidadId, '=', activo);
     return;
   }
   // PENDIENTE: endpoint que confirme Moisés
+  throw new Error('La configuración de alertas aún no está disponible.');
 }

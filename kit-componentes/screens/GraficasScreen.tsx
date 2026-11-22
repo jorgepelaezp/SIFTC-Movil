@@ -16,6 +16,12 @@ import type { Paleta } from "../theme/paletas";
 import { fechaIso, num } from "../utils/formato";
 import { exportarSerieCsv } from "../services/exportacion";
 import { comprobarServidor, type DiagnosticoServidor } from "../services/diagnostico";
+import { getWatchlist } from "../services/ranking";
+import { suscribirDatosActualizados } from "../services/syncEvents";
+import { InterruptorAvisos } from "../components/InterruptorAvisos";
+
+
+
 
 type Props = {
   /** Entidad a mostrar al llegar desde otra pantalla (tocar una entidad). */
@@ -43,6 +49,30 @@ export default function ChartsScreen({ entidadId }: Props) {
       seleccionar(entidadId);
     }
   }, [entidadId, seleccionar]);
+
+
+  
+  // HU-MO-05: ids de la watchlist, para mostrar el interruptor de alertas
+  const [idsWatchlist, setIdsWatchlist] = useState<string[]>([]);
+  useEffect(() => {
+    let activo = true;
+    const cargar = () =>
+      getWatchlist()
+        .then((lista) => {
+          if (activo) setIdsWatchlist(lista.map((e) => String(e.id)));
+        })
+        .catch(() => {
+          if (activo) setIdsWatchlist([]);
+        });
+    cargar();
+    const cancelar = suscribirDatosActualizados(cargar);
+    return () => {
+      activo = false;
+      cancelar();
+    };
+  }, [seleccion]);
+
+  
 
   const [tipo, setTipo] = useState<TipoGrafica>("velas");
   const [exportando, setExportando] = useState(false);
