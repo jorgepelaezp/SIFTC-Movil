@@ -9,7 +9,14 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "environment": "preview",
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://siftc.onrender.com",
+        "EXPO_PUBLIC_API_PREFIX": "/api/v1",
+        "EXPO_PUBLIC_USAR_MOCKS": "false"
+      }
     },
     "production": {
       "autoIncrement": true
