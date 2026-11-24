@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "SIFTC",
+    "name": "Alza",
     "slug": "kit-componentes",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,9 +13,8 @@
       "package": "com.siftc.movil",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
@@ -26,7 +25,15 @@
     "plugins": [
       "expo-status-bar",
       "expo-font",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
       "expo-secure-store",
       "expo-sqlite",
       "expo-sharing",
